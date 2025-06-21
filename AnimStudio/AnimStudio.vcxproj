@@ -97,6 +97,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Formats\Import\AniImporter.cpp" />
     <ClCompile Include="Formats\Import\EffImporter.cpp" />
     <ClCompile Include="Formats\Import\RawImporter.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
@@ -111,6 +112,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="Formats\Import\AniImporter.h" />
     <ClInclude Include="Formats\Import\EffImporter.h" />
     <ClInclude Include="Formats\Import\RawImporter.h" />
   </ItemGroup>

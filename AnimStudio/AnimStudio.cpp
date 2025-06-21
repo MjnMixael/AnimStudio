@@ -1,6 +1,7 @@
 #include "AnimStudio.h"
 #include "AnimationData.h"
 #include "ui_AnimStudio.h"
+#include "Formats/Import/AniImporter.h"
 #include "Formats/Import/EffImporter.h"
 #include "Formats/Import/RawImporter.h"
 #include "Widgets/spinnerwidget.h"
@@ -186,8 +187,21 @@ void AnimStudio::loadAnimation(AnimationType type, QString path)
     
     switch (type) {
         case AnimationType::Ani: {
-            QMessageBox::critical(this, "Import Failed", "ANI import not implemented yet");
-            break;
+            QFuture<std::optional<AnimationData>> future = QtConcurrent::run(AniImporter::importFromFile, path);
+            auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
+
+            connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
+                std::optional<AnimationData> result = watcher->result();
+                watcher->deleteLater();
+                if (result.has_value()) {
+                    onAnimationLoadFinished(result);
+                } else {
+                    onAnimationLoadFinished(std::nullopt, "Failed to import the ANI animation.");
+                }
+                });
+
+            watcher->setFuture(future);
+            return;
         }
         case AnimationType::Eff: {
             QFuture<std::optional<AnimationData>> future = QtConcurrent::run(EffImporter::importFromFile, path);
