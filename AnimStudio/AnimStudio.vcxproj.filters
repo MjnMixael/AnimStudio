@@ -24,6 +24,9 @@
     <Filter Include="Source Files\Widgets">
       <UniqueIdentifier>{d306aae8-51d9-438b-a311-09960a07d3fe}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Formats">
+      <UniqueIdentifier>{8a801267-ace8-4e75-8151-c0f92b0b6a3c}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="AnimStudio.qrc">
@@ -46,10 +49,27 @@
     <ClCompile Include="Widgets\SpinnerWidget.cpp">
       <Filter>Source Files\Widgets</Filter>
     </ClCompile>
+    <ClCompile Include="Formats\EffImporter.cpp">
+      <Filter>Source Files\Formats</Filter>
+    </ClCompile>
+    <ClCompile Include="Formats\RawImporter.cpp">
+      <Filter>Source Files\Formats</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
       <Filter>Source Files\Widgets</Filter>
     </QtMoc>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Formats\EffImporter.h">
+      <Filter>Source Files\Formats</Filter>
+    </ClInclude>
+    <ClInclude Include="AnimationData.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\RawImporter.h">
+      <Filter>Source Files\Formats</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

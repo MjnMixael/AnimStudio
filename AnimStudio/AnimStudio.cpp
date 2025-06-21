@@ -1,5 +1,8 @@
 #include "AnimStudio.h"
+#include "AnimationData.h"
 #include "ui_AnimStudio.h"
+#include "Formats/EffImporter.h"
+#include "Formats/RawImporter.h"
 #include "Widgets/spinnerwidget.h"
 
 #include <QFileDialog>
@@ -9,6 +12,8 @@
 #include <QtConcurrent>
 #include <QFuture>
 #include <QFutureWatcher>
+#include <QMessageBox>
+#include <optional>
 
 AnimStudio::AnimStudio(QWidget* parent)
     : QMainWindow(parent)
@@ -56,44 +61,25 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
     if (dir.isEmpty())
         return;
 
-    ui.previewLabel->hide();
     resetControls();
+    ui.previewLabel->hide();
 
-    // Create and show spinner
     SpinnerWidget* spinner = new SpinnerWidget(ui.scrollArea);
     spinner->move((ui.scrollArea->width() - spinner->width()) / 2,
         (ui.scrollArea->height() - spinner->height()) / 2);
     spinner->show();
     QApplication::processEvents();
 
-    QStringList filters = { "*.png", "*.bmp", "*.jpg", "*.tga" };
-    QDir directory(dir);
-    QStringList files = directory.entryList(filters, QDir::Files, QDir::Name);
+    QFuture<AnimationData> future = QtConcurrent::run(RawImporter::importBlocking, dir);
+    QFutureWatcher<AnimationData>* watcher = new QFutureWatcher<AnimationData>(this);
 
-    QFuture<QVector<QImage>> future = QtConcurrent::run(loadImageSequence, dir, filters);
-    QFutureWatcher<QVector<QImage>>* watcher = new QFutureWatcher<QVector<QImage>>(this);
-
-    connect(watcher, &QFutureWatcher<QVector<QImage>>::finished, this, [=]() {
-        frames = watcher->result();
-        currentFrameIndex = 0;
-
+    connect(watcher, &QFutureWatcher<AnimationData>::finished, this, [=]() {
         spinner->hide();
         spinner->deleteLater();
         watcher->deleteLater();
-        ui.previewLabel->show();
 
-        if (!frames.isEmpty()) {
-            QImage first = frames.first();
-            originalFrameSize = first.size();
-            resizeEvent(nullptr);
-            ui.previewLabel->setPixmap(QPixmap::fromImage(first));
-
-            ui.timelineSlider->setMaximum(frames.size() - 1);
-            ui.timelineSlider->setValue(0);
-            playbackTimer->start();
-            ui.playPauseButton->setText("Pause");
-        }
-    });
+        loadAnimationData(watcher->result());
+        });
 
     watcher->setFuture(future);
 }
@@ -160,9 +146,94 @@ void AnimStudio::on_actionClose_Image_Sequence_triggered()
     currentFrameIndex = 0;
 }
 
+void AnimStudio::on_actionImport_Animation_triggered()
+{
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Import Animation",
+        QString(),
+        "Animation Files (*.ani *.eff *.png);;All Files (*.*)"
+    );
+
+    if (filePath.isEmpty())
+        return;
+
+    ui.previewLabel->hide();
+    resetControls();
+
+    // Show spinner
+    SpinnerWidget* spinner = new SpinnerWidget(ui.scrollArea);
+    spinner->move((ui.scrollArea->width() - spinner->width()) / 2,
+        (ui.scrollArea->height() - spinner->height()) / 2);
+    spinner->show();
+    QApplication::processEvents();
+
+    QFileInfo fileInfo(filePath);
+    QString extension = fileInfo.suffix().toLower();
+
+    std::optional<AnimationData> animation;
+
+    // TODO move all this to it's own method with an enum switch
+    if (extension == "eff") {
+        QFuture<std::optional<AnimationData>> future = EffImporter::importFromFileAsync(filePath);
+        auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
+        connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
+            std::optional<AnimationData> animation = watcher->result();
+            watcher->deleteLater();
+            if (animation.has_value()) {
+                loadAnimationData(animation.value());
+            } else {
+                QMessageBox::critical(this, "Import Failed", "Failed to import the selected animation.");
+            }
+
+            spinner->hide();
+            spinner->deleteLater();
+            });
+        watcher->setFuture(future);
+        return;
+    } else if (extension == "ani") {
+        // animation = AniImporter::importFromFile(filePath); // to be implemented
+    } else if (extension == "png") {
+        // animation = PngSequenceImporter::importFromFile(filePath); // to be implemented
+    } else {
+        QMessageBox::warning(this, "Unsupported Format", "The selected file format is not supported.");
+        return;
+    }
+
+    if (animation.has_value()) {
+        loadAnimationData(animation.value());
+    } else {
+        QMessageBox::critical(this, "Import Failed", "Failed to import the selected animation.");
+    }
+}
+
 void AnimStudio::on_actionExit_triggered()
 {
     close();
+}
+
+void AnimStudio::loadAnimationData(const AnimationData& data)
+{
+    // Directly assign frames
+    currentFrameIndex = 0;
+    frames.clear();
+    for (const auto& frame : data.frames) {
+        frames.push_back(frame.image);
+    }
+
+    ui.previewLabel->show();
+
+    if (!frames.isEmpty()) {
+        QImage first = frames.first();
+        originalFrameSize = first.size();
+        resizeEvent(nullptr);
+        ui.previewLabel->setPixmap(QPixmap::fromImage(first));
+
+        ui.timelineSlider->setMaximum(frames.size() - 1);
+        ui.timelineSlider->setValue(0);
+        playbackTimer->start();
+        ui.playPauseButton->setText("Pause");
+    }
 }
 
 void AnimStudio::resizeEvent(QResizeEvent* event)

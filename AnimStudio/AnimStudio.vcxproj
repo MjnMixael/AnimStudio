@@ -63,6 +63,11 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
   </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <ClCompile>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+    </ClCompile>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
     <ClCompile>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
@@ -92,6 +97,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Formats\EffImporter.cpp" />
+    <ClCompile Include="Formats\RawImporter.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
     <QtRcc Include="AnimStudio.qrc" />
     <QtUic Include="AnimStudio.ui" />
@@ -101,6 +108,11 @@
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="Formats\EffImporter.h" />
+    <ClInclude Include="Formats\RawImporter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

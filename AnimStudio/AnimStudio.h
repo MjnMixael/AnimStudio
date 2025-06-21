@@ -6,6 +6,7 @@
 #include <qimage>
 #include <qtimer>
 #include "ui_AnimStudio.h"
+#include "AnimationData.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AnimStudioClass; }
@@ -24,6 +25,7 @@ protected:
 private slots:
     void on_actionOpenImageSequence_triggered();
     void on_actionClose_Image_Sequence_triggered();
+    void on_actionImport_Animation_triggered();
     void on_actionExit_triggered();
 
     void updatePreviewFrame();
@@ -39,6 +41,7 @@ private:
     void on_fpsSpinBox_valueChanged(int value);
     void on_timelineSlider_valueChanged(int value);
 
+    void loadAnimationData(const AnimationData& data);
     void resetControls();
 };
 
