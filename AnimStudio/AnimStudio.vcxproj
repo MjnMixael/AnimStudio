@@ -97,8 +97,8 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Formats\EffImporter.cpp" />
-    <ClCompile Include="Formats\RawImporter.cpp" />
+    <ClCompile Include="Formats\Import\EffImporter.cpp" />
+    <ClCompile Include="Formats\Import\RawImporter.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
     <QtRcc Include="AnimStudio.qrc" />
     <QtUic Include="AnimStudio.ui" />
@@ -111,8 +111,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationData.h" />
-    <ClInclude Include="Formats\EffImporter.h" />
-    <ClInclude Include="Formats\RawImporter.h" />
+    <ClInclude Include="Formats\Import\EffImporter.h" />
+    <ClInclude Include="Formats\Import\RawImporter.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

@@ -5,8 +5,11 @@
 #include <qvector>
 #include <qimage>
 #include <qtimer>
+#include <QtConcurrent>
+#include <optional>
 #include "ui_AnimStudio.h"
 #include "AnimationData.h"
+#include "Widgets/SpinnerWidget.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class AnimStudioClass; }
@@ -36,12 +39,17 @@ private:
     QTimer* playbackTimer = nullptr;
     int currentFrameIndex = 0;
     QSize originalFrameSize;
+    SpinnerWidget* spinner = nullptr;
 
     void on_playPauseButton_clicked();
     void on_fpsSpinBox_valueChanged(int value);
     void on_timelineSlider_valueChanged(int value);
 
-    void loadAnimationData(const AnimationData& data);
+    void loadAnimation(AnimationType type, QString path);
+    void onAnimationLoadFinished(const std::optional<AnimationData>& data, const QString& errorMessage = "");
     void resetControls();
+
+    void createSpinner(QWidget* parent);
+    void deleteSpinner();
 };
 

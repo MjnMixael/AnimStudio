@@ -5,6 +5,13 @@
 #include <QImage>
 #include <QVector>
 
+enum class AnimationType {
+    Eff,
+    Ani,
+    Apng,
+    Raw
+};
+
 struct AnimationFrame {
     QImage image;
     int index;
