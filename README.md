@@ -1,0 +1,2 @@
+# AnimStudio
+FreespaceOpen AnimStudio
