@@ -66,7 +66,23 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
     <ClCompile>
@@ -97,7 +113,39 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Dependencies\apng_dis.cpp" />
+    <ClCompile Include="Dependencies\libpng\png.c" />
+    <ClCompile Include="Dependencies\libpng\pngerror.c" />
+    <ClCompile Include="Dependencies\libpng\pngget.c" />
+    <ClCompile Include="Dependencies\libpng\pngmem.c" />
+    <ClCompile Include="Dependencies\libpng\pngpread.c" />
+    <ClCompile Include="Dependencies\libpng\pngread.c" />
+    <ClCompile Include="Dependencies\libpng\pngrio.c" />
+    <ClCompile Include="Dependencies\libpng\pngrtran.c" />
+    <ClCompile Include="Dependencies\libpng\pngrutil.c" />
+    <ClCompile Include="Dependencies\libpng\pngset.c" />
+    <ClCompile Include="Dependencies\libpng\pngtrans.c" />
+    <ClCompile Include="Dependencies\libpng\pngwio.c" />
+    <ClCompile Include="Dependencies\libpng\pngwrite.c" />
+    <ClCompile Include="Dependencies\libpng\pngwtran.c" />
+    <ClCompile Include="Dependencies\libpng\pngwutil.c" />
+    <ClCompile Include="Dependencies\zlib\adler32.c" />
+    <ClCompile Include="Dependencies\zlib\compress.c" />
+    <ClCompile Include="Dependencies\zlib\crc32.c" />
+    <ClCompile Include="Dependencies\zlib\deflate.c" />
+    <ClCompile Include="Dependencies\zlib\gzclose.c" />
+    <ClCompile Include="Dependencies\zlib\gzlib.c" />
+    <ClCompile Include="Dependencies\zlib\gzread.c" />
+    <ClCompile Include="Dependencies\zlib\gzwrite.c" />
+    <ClCompile Include="Dependencies\zlib\infback.c" />
+    <ClCompile Include="Dependencies\zlib\inffast.c" />
+    <ClCompile Include="Dependencies\zlib\inflate.c" />
+    <ClCompile Include="Dependencies\zlib\inftrees.c" />
+    <ClCompile Include="Dependencies\zlib\trees.c" />
+    <ClCompile Include="Dependencies\zlib\uncompr.c" />
+    <ClCompile Include="Dependencies\zlib\zutil.c" />
     <ClCompile Include="Formats\Import\AniImporter.cpp" />
+    <ClCompile Include="Formats\Import\ApngImporter.cpp" />
     <ClCompile Include="Formats\Import\EffImporter.cpp" />
     <ClCompile Include="Formats\Import\RawImporter.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
@@ -112,7 +160,26 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="Dependencies\libpng\png.h" />
+    <ClInclude Include="Dependencies\libpng\pngconf.h" />
+    <ClInclude Include="Dependencies\libpng\pngdebug.h" />
+    <ClInclude Include="Dependencies\libpng\pnginfo.h" />
+    <ClInclude Include="Dependencies\libpng\pnglibconf.h" />
+    <ClInclude Include="Dependencies\libpng\pngpriv.h" />
+    <ClInclude Include="Dependencies\libpng\pngstruct.h" />
+    <ClInclude Include="Dependencies\zlib\crc32.h" />
+    <ClInclude Include="Dependencies\zlib\deflate.h" />
+    <ClInclude Include="Dependencies\zlib\gzguts.h" />
+    <ClInclude Include="Dependencies\zlib\inffast.h" />
+    <ClInclude Include="Dependencies\zlib\inffixed.h" />
+    <ClInclude Include="Dependencies\zlib\inflate.h" />
+    <ClInclude Include="Dependencies\zlib\inftrees.h" />
+    <ClInclude Include="Dependencies\zlib\trees.h" />
+    <ClInclude Include="Dependencies\zlib\zconf.h" />
+    <ClInclude Include="Dependencies\zlib\zlib.h" />
+    <ClInclude Include="Dependencies\zlib\zutil.h" />
     <ClInclude Include="Formats\Import\AniImporter.h" />
+    <ClInclude Include="Formats\Import\ApngImporter.h" />
     <ClInclude Include="Formats\Import\EffImporter.h" />
     <ClInclude Include="Formats\Import\RawImporter.h" />
   </ItemGroup>

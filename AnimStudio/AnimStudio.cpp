@@ -2,6 +2,7 @@
 #include "AnimationData.h"
 #include "ui_AnimStudio.h"
 #include "Formats/Import/AniImporter.h"
+#include "Formats/Import/ApngImporter.h"
 #include "Formats/Import/EffImporter.h"
 #include "Formats/Import/RawImporter.h"
 #include "Widgets/spinnerwidget.h"
@@ -222,8 +223,22 @@ void AnimStudio::loadAnimation(AnimationType type, QString path)
             return;
         }
         case AnimationType::Apng: {
-            QMessageBox::critical(this, "Import Failed", "APNG import not implemented yet");
-            break;
+            QFuture<std::optional<AnimationData>> future = QtConcurrent::run(ApngImporter::importFromFile, path);
+            auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
+
+            connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
+                std::optional<AnimationData> result = watcher->result();
+                watcher->deleteLater();
+
+                if (result.has_value()) {
+                    onAnimationLoadFinished(result);
+                } else {
+                    onAnimationLoadFinished(std::nullopt, "Failed to import the selected animation.");
+                }
+                });
+
+            watcher->setFuture(future);
+            return;
         }
         case AnimationType::Raw: {
             QFuture<AnimationData> future = QtConcurrent::run(RawImporter::importBlocking, path);

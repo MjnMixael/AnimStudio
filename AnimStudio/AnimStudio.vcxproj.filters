@@ -30,6 +30,15 @@
     <Filter Include="Source Files\Formats\Import">
       <UniqueIdentifier>{e14ff03b-7eb9-4331-a4bb-4e53392da07e}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Dependencies">
+      <UniqueIdentifier>{241c67d2-69d1-41e6-9561-ccc415c7b028}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dependencies\libpng">
+      <UniqueIdentifier>{051a6cf0-1ea0-4295-9920-fb4e84483aed}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dependencies\zlib">
+      <UniqueIdentifier>{ff80af33-a572-4427-b67a-13824dd3ee3b}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="AnimStudio.qrc">
@@ -61,6 +70,102 @@
     <ClCompile Include="Formats\Import\AniImporter.cpp">
       <Filter>Source Files\Formats\Import</Filter>
     </ClCompile>
+    <ClCompile Include="Formats\Import\ApngImporter.cpp">
+      <Filter>Source Files\Formats\Import</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\apng_dis.cpp">
+      <Filter>Source Files\Dependencies</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\png.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngerror.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngget.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngmem.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngpread.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngread.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngrio.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngrtran.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngrutil.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngset.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngtrans.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngwio.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngwrite.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngwtran.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libpng\pngwutil.c">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\adler32.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\compress.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\crc32.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\deflate.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\gzclose.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\gzlib.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\gzread.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\gzwrite.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\infback.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\inffast.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\inflate.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\inftrees.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\trees.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\uncompr.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\zlib\zutil.c">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -79,6 +184,63 @@
     </ClInclude>
     <ClInclude Include="Formats\Import\AniImporter.h">
       <Filter>Source Files\Formats\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\Import\ApngImporter.h">
+      <Filter>Source Files\Formats\Import</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\png.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pngconf.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pngdebug.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pnginfo.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pnglibconf.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pngpriv.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libpng\pngstruct.h">
+      <Filter>Source Files\Dependencies\libpng</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\crc32.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\deflate.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\gzguts.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\inffast.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\inffixed.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\inflate.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\inftrees.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\trees.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\zconf.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\zlib.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\zlib\zutil.h">
+      <Filter>Source Files\Dependencies\zlib</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
