@@ -34,10 +34,7 @@ AnimStudio::AnimStudio(QWidget* parent)
     // Connect the widgets to the code
     connect(playbackTimer, &QTimer::timeout,this, &AnimStudio::updatePreviewFrame);
     connect(ui.playPauseButton, &QPushButton::clicked, this, &AnimStudio::on_playPauseButton_clicked);
-    connect(ui.fpsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::on_fpsSpinBox_valueChanged);
     connect(ui.timelineSlider, &QSlider::valueChanged, this, &AnimStudio::on_timelineSlider_valueChanged);
-
-    connect(ui.fpsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int fps) {fpsLabel->setText(QString::number(fps));});
 
     // No scrollbars in the animation preview area
     ui.scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -302,7 +299,6 @@ void AnimStudio::onAnimationLoadFinished(const std::optional<AnimationData>& dat
 
         ui.timelineSlider->setMaximum(frames.size() - 1);
         ui.timelineSlider->setValue(0);
-        ui.fpsSpinBox->setValue(data->fps);
         playbackTimer->start();
         ui.playPauseButton->setText("Pause");
 
@@ -332,12 +328,24 @@ void AnimStudio::setupMetadataDock() {
     QWidget* container = new QWidget(metadataDock);
     QFormLayout* form = new QFormLayout(container);
 
-    nameLabel = new QLabel; form->addRow(tr("Name:"), nameLabel);
+    nameEdit = new QLineEdit;
+    nameEdit->setPlaceholderText("");
+    form->addRow(tr("Name:"), nameEdit);
+    nameEdit->setEnabled(false);
+
     typeLabel = new QLabel; form->addRow(tr("Type:"), typeLabel);
+    
+    fpsSpin = new QSpinBox;
+    fpsSpin->setRange(1, 240);
+    fpsSpin->setEnabled(false);
+    form->addRow(tr("FPS:"), fpsSpin);
+
     framesLabel = new QLabel; form->addRow(tr("Frames:"), framesLabel);
-    fpsLabel = new QLabel; form->addRow(tr("FPS:"), fpsLabel);
     resolutionLabel = new QLabel; form->addRow(tr("Resolution:"), resolutionLabel);
     keyframesLabel = new QLabel; form->addRow(tr("Keyframes:"), keyframesLabel);
+
+    connect(nameEdit, &QLineEdit::editingFinished, this, &AnimStudio::onNameEditFinished);
+    connect(fpsSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::onMetadataFpsChanged);
 
     container->setLayout(form);
     metadataDock->setWidget(container);
@@ -348,12 +356,38 @@ void AnimStudio::setupMetadataDock() {
 }
 
 void AnimStudio::updateMetadata() {
-    if (currentData_.has_value()) {
+    const bool hasData = currentData_.has_value();
+    nameEdit->setEnabled(hasData);
+    fpsSpin->setEnabled(hasData);
+
+    if (hasData) {
         auto data = currentData_.value();
-        nameLabel->setText(data.baseName);
-        typeLabel->setText(data.type);
+
+        nameEdit->setText(data.baseName);
+
+        QString typeLabelText;
+        switch (data.animationType) {
+            case AnimationType::Eff:
+                typeLabelText = "Eff: " + data.type;
+                break;
+            case AnimationType::Ani:
+                typeLabelText = "Ani";
+                break;
+            case AnimationType::Apng:
+                typeLabelText = "Apng";
+                break;
+            case AnimationType::Raw:
+                typeLabelText = "Sequence: " + data.type;
+                break;
+            default:
+                typeLabelText = "";
+        }
+
+        typeLabel->setText(typeLabelText);
+
+        fpsSpin->setValue(data.fps);
+
         framesLabel->setText(QString::number(data.frameCount));
-        fpsLabel->setText(QString::number(data.fps));
         resolutionLabel->setText(QString("%1 x %2")
             .arg(originalFrameSize.width())
             .arg(originalFrameSize.height()));
@@ -362,11 +396,29 @@ void AnimStudio::updateMetadata() {
         for (int i : data.keyframeIndices) keys << QString::number(i);
         keyframesLabel->setText(keys.join(", "));
     } else {
-        nameLabel->clear();
+        nameEdit->clear();
         typeLabel->clear();
+        fpsSpin->setValue(0);
         framesLabel->clear();
-        fpsLabel->clear();
         resolutionLabel->clear();
         keyframesLabel->clear();
     }
+}
+
+void AnimStudio::onNameEditFinished() {
+    if (!currentData_) return;
+
+    // write back into our stored data
+    currentData_->baseName = nameEdit->text();
+}
+
+void AnimStudio::onMetadataFpsChanged(int fps)
+{
+    if (!currentData_) return;
+
+    // update our stored data
+    currentData_->fps = fps;
+
+    // drive the playback timer
+    playbackTimer->setInterval(1000 / fps);
 }

@@ -8,6 +8,8 @@
 #include <QtConcurrent>
 #include <QDockWidget>
 #include <QLabel>
+#include <QLineEdit>
+#include <QSpinBox>
 #include <optional>
 #include "ui_AnimStudio.h"
 #include "AnimationData.h"
@@ -45,15 +47,17 @@ private:
 
     // new metadata dock & widgets
     QDockWidget* metadataDock = nullptr;
-    QLabel* nameLabel = nullptr;
+    QLineEdit* nameEdit = nullptr;
     QLabel* typeLabel = nullptr;
+    QSpinBox* fpsSpin = nullptr;
     QLabel* framesLabel = nullptr;
-    QLabel* fpsLabel = nullptr;
     QLabel* resolutionLabel = nullptr;
     QLabel* keyframesLabel = nullptr;
 
     void setupMetadataDock();
     void updateMetadata();
+    void onNameEditFinished();
+    void onMetadataFpsChanged(int fps);
 
     void on_playPauseButton_clicked();
     void on_fpsSpinBox_valueChanged(int value);
