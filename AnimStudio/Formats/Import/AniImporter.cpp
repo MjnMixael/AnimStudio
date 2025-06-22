@@ -71,11 +71,16 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     AnimationData out;
     QFileInfo fi(aniPath);
     out.baseName = fi.completeBaseName();
-    out.type = "ANI";
+    out.type = "";
     out.frameCount = int(nframes);
     out.fps = int(fps);
-    out.keyframe = keys.size() > 1 ? keys[1] : (keys.isEmpty() ? -1 : keys[0]);
+    for (quint16 k : keys) {
+        // ANI stores keyframe numbers 1..N but our frames are 0..N-1
+        int idx = (k > 0) ? int(k) - 1 : 0;
+        out.keyframeIndices.append(idx);
+    }
     out.frames.reserve(nframes);
+    out.animationType = AnimationType::Ani;
 
     // 4) Decompress each frame :contentReference[oaicite:2]{index=2}
     for (int i = 0; i < nframes; ++i) {

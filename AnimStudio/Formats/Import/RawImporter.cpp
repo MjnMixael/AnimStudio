@@ -11,9 +11,28 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
     QDir directory(dir);
     QStringList files = directory.entryList(filters, QDir::Files, QDir::Name);
 
+    if (!files.isEmpty()) {
+        // Use the first file to seed baseName and type
+        QFileInfo firstFi(directory.filePath(files.first()));
+        // Given the “complete” base name (everything before the last dot):
+        QString rawBase = firstFi.completeBaseName();  // e.g. "walk_0001"
+
+        // Remove a trailing “_1234” or “-1234” or just “1234”
+        QString strippedBase = rawBase;
+        strippedBase.replace(
+            QRegularExpression("([_\\-]?\\d+)$"),
+            QString()     // replace with empty
+        );
+        data.baseName = strippedBase; // e.g. "walk"
+        data.type = firstFi.suffix().toLower();       // e.g. "png"
+    } else {
+        // No files: fall back to directory name
+        data.baseName = QString();
+        data.type = QString();
+    }
+
     data.frameCount = files.size();
     data.fps = 15; // TODO Default FPS, can be adjusted later
-    data.baseName = QFileInfo(dir).fileName(); // TODO Use first image file name as base name
 
     for (const QString& file : files) {
         QImage img(dir + "/" + file);
@@ -23,6 +42,8 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
             data.frames.append(frame);
         }
     }
+
+    data.animationType = AnimationType::Raw;
 
     return data;
 }

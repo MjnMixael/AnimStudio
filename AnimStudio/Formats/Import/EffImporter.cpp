@@ -26,7 +26,7 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
         else if (line.startsWith("$FPS:", Qt::CaseInsensitive))
             data.fps = line.section(':', 1).trimmed().toInt();
         else if (line.startsWith("$Keyframe:", Qt::CaseInsensitive))
-            data.keyframe = line.section(':', 1).trimmed().toInt();
+            data.keyframeIndices.append(line.section(':', 1).trimmed().toInt());
     }
 
     QDir dir = QFileInfo(effPath).absoluteDir();
@@ -40,6 +40,8 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
 
         data.frames.append(AnimationFrame{ frame, i, frameName });
     }
+
+    data.animationType = AnimationType::Eff;
 
     return data;
 }

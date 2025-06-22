@@ -160,6 +160,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AnimationData.h" />
+    <ClInclude Include="Dependencies\apng_dis.h" />
     <ClInclude Include="Dependencies\libpng\png.h" />
     <ClInclude Include="Dependencies\libpng\pngconf.h" />
     <ClInclude Include="Dependencies\libpng\pngdebug.h" />

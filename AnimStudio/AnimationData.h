@@ -21,9 +21,10 @@ struct AnimationFrame {
 struct AnimationData {
     QString baseName;
     QString type; // DDS, PNG, etc.
+    AnimationType animationType = AnimationType::Raw;
     int frameCount = 0;
     int fps = 15;
-    int keyframe = -1;
+    QVector<int> keyframeIndices;
 
     QVector<AnimationFrame> frames;
 };
