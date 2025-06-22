@@ -66,7 +66,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -76,7 +76,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -114,6 +114,14 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Dependencies\apng_dis.cpp" />
+    <ClCompile Include="Dependencies\libimagequant\blur.c" />
+    <ClCompile Include="Dependencies\libimagequant\kmeans.c" />
+    <ClCompile Include="Dependencies\libimagequant\libimagequant.c" />
+    <ClCompile Include="Dependencies\libimagequant\mediancut.c" />
+    <ClCompile Include="Dependencies\libimagequant\mempool.c" />
+    <ClCompile Include="Dependencies\libimagequant\nearest.c" />
+    <ClCompile Include="Dependencies\libimagequant\pam.c" />
+    <ClCompile Include="Dependencies\libimagequant\remap.c" />
     <ClCompile Include="Dependencies\libpng\png.c" />
     <ClCompile Include="Dependencies\libpng\pngerror.c" />
     <ClCompile Include="Dependencies\libpng\pngget.c" />
@@ -148,6 +156,7 @@
     <ClCompile Include="Formats\Import\ApngImporter.cpp" />
     <ClCompile Include="Formats\Import\EffImporter.cpp" />
     <ClCompile Include="Formats\Import\RawImporter.cpp" />
+    <ClCompile Include="quantizer.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
     <QtRcc Include="AnimStudio.qrc" />
     <QtUic Include="AnimStudio.ui" />
@@ -161,6 +170,15 @@
   <ItemGroup>
     <ClInclude Include="AnimationData.h" />
     <ClInclude Include="Dependencies\apng_dis.h" />
+    <ClInclude Include="Dependencies\libimagequant\blur.h" />
+    <ClInclude Include="Dependencies\libimagequant\kmeans.h" />
+    <ClInclude Include="Dependencies\libimagequant\libimagequant.h" />
+    <ClInclude Include="Dependencies\libimagequant\libimagequant_private.h" />
+    <ClInclude Include="Dependencies\libimagequant\mediancut.h" />
+    <ClInclude Include="Dependencies\libimagequant\mempool.h" />
+    <ClInclude Include="Dependencies\libimagequant\nearest.h" />
+    <ClInclude Include="Dependencies\libimagequant\pam.h" />
+    <ClInclude Include="Dependencies\libimagequant\remap.h" />
     <ClInclude Include="Dependencies\libpng\png.h" />
     <ClInclude Include="Dependencies\libpng\pngconf.h" />
     <ClInclude Include="Dependencies\libpng\pngdebug.h" />
@@ -183,6 +201,7 @@
     <ClInclude Include="Formats\Import\ApngImporter.h" />
     <ClInclude Include="Formats\Import\EffImporter.h" />
     <ClInclude Include="Formats\Import\RawImporter.h" />
+    <ClInclude Include="quantizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Condition="Exists('$(QtMsBuild)\qt.targets')">

@@ -39,6 +39,9 @@
     <Filter Include="Source Files\Dependencies\zlib">
       <UniqueIdentifier>{ff80af33-a572-4427-b67a-13824dd3ee3b}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Dependencies\libimagequant">
+      <UniqueIdentifier>{20e52d37-35d4-4702-b94c-398f677f5e12}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="AnimStudio.qrc">
@@ -166,6 +169,33 @@
     <ClCompile Include="Dependencies\zlib\zutil.c">
       <Filter>Source Files\Dependencies\zlib</Filter>
     </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\blur.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\kmeans.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\libimagequant.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\mediancut.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\mempool.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\nearest.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\pam.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\libimagequant\remap.c">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClCompile>
+    <ClCompile Include="quantizer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -244,6 +274,36 @@
     </ClInclude>
     <ClInclude Include="Dependencies\apng_dis.h">
       <Filter>Source Files\Dependencies</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\blur.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\kmeans.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\libimagequant.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\libimagequant_private.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\mediancut.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\mempool.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\nearest.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\pam.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\libimagequant\remap.h">
+      <Filter>Source Files\Dependencies\libimagequant</Filter>
+    </ClInclude>
+    <ClInclude Include="quantizer.h">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 #include "AnimStudio.h"
 #include "AnimationData.h"
 #include "ui_AnimStudio.h"
+#include "quantizer.h"
 #include "Formats/Import/AniImporter.h"
 #include "Formats/Import/ApngImporter.h"
 #include "Formats/Import/EffImporter.h"
@@ -370,8 +371,20 @@ void AnimStudio::setupMetadataDock() {
     connect(allKeyframesCheck, &QCheckBox::toggled,
         this, &AnimStudio::onAllKeyframesToggled);
 
+    // Quantization buttons:
+    quantizeBtn = new QPushButton(tr("Quantize"));
+    undoQuantBtn = new QPushButton(tr("Undo"));
+    QHBoxLayout* hlay = new QHBoxLayout;
+    hlay->addWidget(quantizeBtn);
+    hlay->addWidget(undoQuantBtn);
+    form->addRow(QString(), hlay);
+
     connect(nameEdit, &QLineEdit::editingFinished, this, &AnimStudio::onNameEditFinished);
     connect(fpsSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::onMetadataFpsChanged);
+
+    // Connect quantization buttons
+    connect(quantizeBtn, &QPushButton::clicked, this, &AnimStudio::onQuantizeClicked);
+    connect(undoQuantBtn, &QPushButton::clicked, this, &AnimStudio::onUndoQuantize);
 
     container->setLayout(form);
     metadataDock->setWidget(container);
@@ -387,6 +400,8 @@ void AnimStudio::updateMetadata() {
     fpsSpin->setEnabled(hasData);
     loopPointSpin->setEnabled(hasData);
     allKeyframesCheck->setEnabled(hasData);
+    quantizeBtn->setEnabled(hasData);
+    undoQuantBtn->setEnabled(hasData && !backupFrames_.isEmpty());
 
     if (hasData) {
         auto data = currentData_.value();
@@ -443,6 +458,7 @@ void AnimStudio::updateMetadata() {
         resolutionLabel->clear();
         loopPointSpin->setValue(0);
         allKeyframesCheck->setChecked(false);
+        backupFrames_.clear();
     }
 }
 
@@ -488,4 +504,41 @@ void AnimStudio::onAllKeyframesToggled(bool all) {
         int f = loopPointSpin->value();
         currentData_->keyframeIndices = { f };
     }
+}
+
+void AnimStudio::onQuantizeClicked() {
+    if (!currentData_) return;
+
+    // 1) backup originals
+    backupFrames_ = currentData_->frames;
+
+    // 2) run quantizer (empty palette = auto; you can extend to pick palette)
+    auto result = Quantizer::quantize(currentData_->frames);
+    if (!result) {
+        QMessageBox::warning(this, tr("Quantize Failed"),
+            tr("Color reduction failed."));
+        return;
+    }
+
+    // 3) swap in quantized frames & reset playback
+    currentData_->frames = std::move(result->frames);
+    currentFrameIndex = 0;
+    updatePreviewFrame();
+
+    // 4) update button states
+    undoQuantBtn->setEnabled(true);
+    quantizeBtn->setEnabled(false);
+}
+
+void AnimStudio::onUndoQuantize() {
+    if (backupFrames_.isEmpty() || !currentData_) return;
+
+    // restore
+    currentData_->frames = std::move(backupFrames_);
+    currentFrameIndex = 0;
+    updatePreviewFrame();
+
+    // reset button states
+    undoQuantBtn->setEnabled(false);
+    quantizeBtn->setEnabled(true);
 }

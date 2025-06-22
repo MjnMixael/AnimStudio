@@ -46,6 +46,8 @@ private:
     QSize originalFrameSize;
     SpinnerWidget* spinner = nullptr;
 
+    QVector<AnimationFrame> backupFrames_;
+
     // new metadata dock & widgets
     QDockWidget* metadataDock = nullptr;
     QLineEdit* nameEdit = nullptr;
@@ -56,12 +58,17 @@ private:
     QSpinBox* loopPointSpin = nullptr;
     QCheckBox* allKeyframesCheck = nullptr;
 
+    QPushButton* quantizeBtn = nullptr;
+    QPushButton* undoQuantBtn = nullptr;
+
     void setupMetadataDock();
     void updateMetadata();
     void onNameEditFinished();
     void onMetadataFpsChanged(int fps);
     void onLoopPointChanged(int frame);
     void onAllKeyframesToggled(bool all);
+    void onQuantizeClicked();
+    void onUndoQuantize();
 
     void on_playPauseButton_clicked();
     void on_fpsSpinBox_valueChanged(int value);
