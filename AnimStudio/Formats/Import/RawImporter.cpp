@@ -1,5 +1,5 @@
 #include "RawImporter.h"
-#include "AnimationData.h"
+#include "Animation/AnimationData.h"
 #include <QDir>
 #include <QImageReader>
 #include <QRegularExpression>

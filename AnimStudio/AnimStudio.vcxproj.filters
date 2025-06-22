@@ -5,17 +5,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>qml;cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
-    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>qrc;rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Form Files">
-      <UniqueIdentifier>{99349809-55BA-4b9d-BF79-8FDBB0286EB3}</UniqueIdentifier>
-      <Extensions>ui</Extensions>
     </Filter>
     <Filter Include="Translation Files">
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
@@ -42,20 +34,23 @@
     <Filter Include="Source Files\Dependencies\libimagequant">
       <UniqueIdentifier>{20e52d37-35d4-4702-b94c-398f677f5e12}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Animation">
+      <UniqueIdentifier>{0e6c49c4-8a8a-4930-ba51-0aacad6b7743}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Forms">
+      <UniqueIdentifier>{741df92e-31ff-4071-993e-1a3321bdddc0}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Windows">
+      <UniqueIdentifier>{5676b60b-b455-4a03-b1aa-ea8f4c066a20}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Dependencies\apngdisassembler">
+      <UniqueIdentifier>{aec6ca12-b6fc-45c0-a670-46d69e1f52df}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <QtRcc Include="AnimStudio.qrc">
       <Filter>Resource Files</Filter>
     </QtRcc>
-    <QtUic Include="AnimStudio.ui">
-      <Filter>Form Files</Filter>
-    </QtUic>
-    <QtMoc Include="AnimStudio.h">
-      <Filter>Header Files</Filter>
-    </QtMoc>
-    <ClCompile Include="AnimStudio.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -75,9 +70,6 @@
     </ClCompile>
     <ClCompile Include="Formats\Import\ApngImporter.cpp">
       <Filter>Source Files\Formats\Import</Filter>
-    </ClCompile>
-    <ClCompile Include="Dependencies\apng_dis.cpp">
-      <Filter>Source Files\Dependencies</Filter>
     </ClCompile>
     <ClCompile Include="Dependencies\libpng\png.c">
       <Filter>Source Files\Dependencies\libpng</Filter>
@@ -193,19 +185,25 @@
     <ClCompile Include="Dependencies\libimagequant\remap.c">
       <Filter>Source Files\Dependencies\libimagequant</Filter>
     </ClCompile>
-    <ClCompile Include="quantizer.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="Animation\Quantizer.cpp">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
+    <ClCompile Include="Windows\AnimStudio.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp">
+      <Filter>Source Files\Dependencies\apngdisassembler</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
       <Filter>Source Files\Widgets</Filter>
     </QtMoc>
+    <QtMoc Include="Windows\AnimStudio.h">
+      <Filter>Source Files\Windows</Filter>
+    </QtMoc>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AnimationData.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Formats\Import\EffImporter.h">
       <Filter>Source Files\Formats\Import</Filter>
     </ClInclude>
@@ -272,9 +270,6 @@
     <ClInclude Include="Dependencies\zlib\zutil.h">
       <Filter>Source Files\Dependencies\zlib</Filter>
     </ClInclude>
-    <ClInclude Include="Dependencies\apng_dis.h">
-      <Filter>Source Files\Dependencies</Filter>
-    </ClInclude>
     <ClInclude Include="Dependencies\libimagequant\blur.h">
       <Filter>Source Files\Dependencies\libimagequant</Filter>
     </ClInclude>
@@ -302,8 +297,19 @@
     <ClInclude Include="Dependencies\libimagequant\remap.h">
       <Filter>Source Files\Dependencies\libimagequant</Filter>
     </ClInclude>
-    <ClInclude Include="quantizer.h">
-      <Filter>Source Files</Filter>
+    <ClInclude Include="Animation\Quantizer.h">
+      <Filter>Source Files\Animation</Filter>
     </ClInclude>
+    <ClInclude Include="Animation\AnimationData.h">
+      <Filter>Source Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h">
+      <Filter>Source Files\Dependencies\apngdisassembler</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <QtUic Include="Forms\AnimStudio.ui">
+      <Filter>Forms</Filter>
+    </QtUic>
   </ItemGroup>
 </Project>

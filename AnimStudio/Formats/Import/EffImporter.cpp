@@ -1,6 +1,6 @@
 // EffImporter.cpp
 #include "EffImporter.h"
-#include "AnimationData.h"
+#include "Animation/AnimationData.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDir>

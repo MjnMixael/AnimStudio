@@ -1,4 +1,4 @@
-#include "AnimStudio.h"
+#include "Windows/AnimStudio.h"
 #include <QtWidgets/QApplication>
 
 int main(int argc, char *argv[])

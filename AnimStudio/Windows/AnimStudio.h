@@ -13,7 +13,7 @@
 #include <QCheckBox>
 #include <optional>
 #include "ui_AnimStudio.h"
-#include "AnimationData.h"
+#include "Animation/AnimationData.h"
 #include "Widgets/SpinnerWidget.h"
 
 QT_BEGIN_NAMESPACE

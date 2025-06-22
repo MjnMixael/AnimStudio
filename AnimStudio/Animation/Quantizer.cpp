@@ -63,7 +63,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
     // 3) Generate global palette from histogram
     liq_result* resultPal = nullptr;
-    liq_set_dithering_level(resultPal, 0.8);
+    liq_set_dithering_level(resultPal, static_cast<float>(0.8));
     if (LIQ_OK != liq_histogram_quantize(hist, attr, &resultPal) || !resultPal) {
         qDebug() << "Quantize: liq_histogram_quantize failed";
         for (liq_image* liqimg : liqImages) liq_image_destroy(liqimg);
@@ -82,14 +82,14 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     const liq_palette* pal = liq_get_palette(resultPal);
     QVector<QRgb> table;
     table.reserve(pal->count);
-    for (int i = 0; i < pal->count; ++i) {
+    for (int i = 0; i < static_cast<int>(pal->count); ++i) {
         const liq_color& c = pal->entries[i];
         table.append(qRgba(c.r, c.g, c.b, c.a));
     }
 
     // 5) Remap each frame with the same palette
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
-    QByteArray buffer(bufSize, 0);
+    QByteArray buffer(static_cast<int>(bufSize), 0);
     for (liq_image* liqimg : liqImages) {
         QImage outImg(w, h, QImage::Format_Indexed8);
         outImg.setColorTable(table);

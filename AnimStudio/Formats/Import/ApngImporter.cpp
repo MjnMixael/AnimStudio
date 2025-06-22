@@ -1,6 +1,6 @@
 #include "ApngImporter.h"
-#include "AnimationData.h"
-#include "Dependencies/apng_dis.h"
+#include "Animation/AnimationData.h"
+#include "apng_dis.h"
 #include <QFileInfo>
 #include <QImage>
 #include <QDebug>
@@ -60,6 +60,7 @@ std::optional<AnimationData> ApngImporter::importFromFile(const QString& path) {
                 int(f.w * f.bpp),
                 QImage::Format_ARGB32
             );
+            img = img.rgbSwapped();
             QImage copy = img.copy();
 
             // duplicate

@@ -1,5 +1,6 @@
 // AniImporter.cpp
 #include "AniImporter.h"
+#include "Animation/AnimationData.h"
 #include <QFile>
 #include <QDataStream>
 #include <QImage>

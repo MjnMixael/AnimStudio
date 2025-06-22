@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AnimationData.h"
+#include "Animation/AnimationData.h"
 #include <optional>
 
 class ApngImporter {

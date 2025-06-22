@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QString>
-#include "AnimationData.h"
+#include "Animation/AnimationData.h"
 #include <optional>
 
 class RawImporter {
