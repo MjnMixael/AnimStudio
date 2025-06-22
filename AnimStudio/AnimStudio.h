@@ -10,6 +10,7 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QSpinBox>
+#include <QCheckBox>
 #include <optional>
 #include "ui_AnimStudio.h"
 #include "AnimationData.h"
@@ -52,12 +53,15 @@ private:
     QSpinBox* fpsSpin = nullptr;
     QLabel* framesLabel = nullptr;
     QLabel* resolutionLabel = nullptr;
-    QLabel* keyframesLabel = nullptr;
+    QSpinBox* loopPointSpin = nullptr;
+    QCheckBox* allKeyframesCheck = nullptr;
 
     void setupMetadataDock();
     void updateMetadata();
     void onNameEditFinished();
     void onMetadataFpsChanged(int fps);
+    void onLoopPointChanged(int frame);
+    void onAllKeyframesToggled(bool all);
 
     void on_playPauseButton_clicked();
     void on_fpsSpinBox_valueChanged(int value);

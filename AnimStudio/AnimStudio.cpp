@@ -92,9 +92,21 @@ void AnimStudio::updatePreviewFrame()
     if (currentData_.value().frames.isEmpty())
         return;
 
-    auto frames = currentData_.value().frames;
+    const auto& frames = currentData_->frames;
 
-    currentFrameIndex = (currentFrameIndex + 1) % frames.size();
+    // compute next frame index
+    int next = currentFrameIndex + 1;
+    if (next >= frames.size()) {
+        // if we've got any keyframes stored, use the first one as loop-back
+        if (!currentData_->keyframeIndices.empty()) {
+            next = currentData_->keyframeIndices.front();
+        } else {
+            // fallback to frame 0
+            next = 0;
+        }
+    }
+    currentFrameIndex = next;
+
     ui.previewLabel->setPixmap(QPixmap::fromImage(frames[currentFrameIndex].image));
     ui.timelineSlider->blockSignals(true);
     ui.timelineSlider->setValue(currentFrameIndex);
@@ -342,7 +354,21 @@ void AnimStudio::setupMetadataDock() {
 
     framesLabel = new QLabel; form->addRow(tr("Frames:"), framesLabel);
     resolutionLabel = new QLabel; form->addRow(tr("Resolution:"), resolutionLabel);
-    keyframesLabel = new QLabel; form->addRow(tr("Keyframes:"), keyframesLabel);
+    
+    // Loop-back spin:
+    loopPointSpin = new QSpinBox;
+    loopPointSpin->setRange(0, 0);            // will be set when data loads
+    loopPointSpin->setEnabled(false);
+    form->addRow(tr("Loop-back frame:"), loopPointSpin);
+    connect(loopPointSpin, QOverload<int>::of(&QSpinBox::valueChanged),
+        this, &AnimStudio::onLoopPointChanged);
+
+    // “All frames are keyframes”:
+    allKeyframesCheck = new QCheckBox(tr("All frames keyframes"));
+    allKeyframesCheck->setEnabled(false);
+    form->addRow(QString(), allKeyframesCheck);
+    connect(allKeyframesCheck, &QCheckBox::toggled,
+        this, &AnimStudio::onAllKeyframesToggled);
 
     connect(nameEdit, &QLineEdit::editingFinished, this, &AnimStudio::onNameEditFinished);
     connect(fpsSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::onMetadataFpsChanged);
@@ -359,6 +385,8 @@ void AnimStudio::updateMetadata() {
     const bool hasData = currentData_.has_value();
     nameEdit->setEnabled(hasData);
     fpsSpin->setEnabled(hasData);
+    loopPointSpin->setEnabled(hasData);
+    allKeyframesCheck->setEnabled(hasData);
 
     if (hasData) {
         auto data = currentData_.value();
@@ -394,14 +422,27 @@ void AnimStudio::updateMetadata() {
         // comma-list of keyframes
         QStringList keys;
         for (int i : data.keyframeIndices) keys << QString::number(i);
-        keyframesLabel->setText(keys.join(", "));
+        loopPointSpin->setRange(0, data.frameCount - 1);
+
+        bool all = (int)data.keyframeIndices.size() == data.frameCount;
+        allKeyframesCheck->setChecked(all);
+
+        if (all) {
+            // when “All” is on, spin tells nothing
+        } else if (data.keyframeIndices.empty()) {
+            loopPointSpin->setValue(0);
+        } else {
+            // pick the first (there should only ever be one)
+            loopPointSpin->setValue(data.keyframeIndices[0]);
+        }
     } else {
         nameEdit->clear();
         typeLabel->clear();
         fpsSpin->setValue(0);
         framesLabel->clear();
         resolutionLabel->clear();
-        keyframesLabel->clear();
+        loopPointSpin->setValue(0);
+        allKeyframesCheck->setChecked(false);
     }
 }
 
@@ -421,4 +462,30 @@ void AnimStudio::onMetadataFpsChanged(int fps)
 
     // drive the playback timer
     playbackTimer->setInterval(1000 / fps);
+}
+
+void AnimStudio::onLoopPointChanged(int frame) {
+    if (!currentData_ || allKeyframesCheck->isChecked())
+        return;
+
+    // single keyframe mode:
+    currentData_->keyframeIndices = { frame };
+}
+
+void AnimStudio::onAllKeyframesToggled(bool all) {
+    if (!currentData_)
+        return;
+
+    if (all) {
+        // fill every index
+        currentData_->keyframeIndices.resize(currentData_->frameCount);
+        std::iota(currentData_->keyframeIndices.begin(),
+            currentData_->keyframeIndices.end(), 0);
+        loopPointSpin->setEnabled(false);
+    } else {
+        // switch back to single-key mode at whatever spin value
+        loopPointSpin->setEnabled(true);
+        int f = loopPointSpin->value();
+        currentData_->keyframeIndices = { f };
+    }
 }
