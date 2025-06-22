@@ -16,6 +16,7 @@
 #include <QFutureWatcher>
 #include <QMessageBox>
 #include <optional>
+#include <QFormLayout>
 
 AnimStudio::AnimStudio(QWidget* parent)
     : QMainWindow(parent)
@@ -25,6 +26,8 @@ AnimStudio::AnimStudio(QWidget* parent)
 {
     ui.setupUi(this);
 
+    setupMetadataDock();
+
     // Timer for frame cycling
     playbackTimer->setInterval(100); // 10 FPS
 
@@ -33,6 +36,8 @@ AnimStudio::AnimStudio(QWidget* parent)
     connect(ui.playPauseButton, &QPushButton::clicked, this, &AnimStudio::on_playPauseButton_clicked);
     connect(ui.fpsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::on_fpsSpinBox_valueChanged);
     connect(ui.timelineSlider, &QSlider::valueChanged, this, &AnimStudio::on_timelineSlider_valueChanged);
+
+    connect(ui.fpsSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int fps) {fpsLabel->setText(QString::number(fps));});
 
     // No scrollbars in the animation preview area
     ui.scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -87,11 +92,13 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
 
 void AnimStudio::updatePreviewFrame()
 {
-    if (frames.isEmpty())
+    if (currentData_.value().frames.isEmpty())
         return;
 
+    auto frames = currentData_.value().frames;
+
     currentFrameIndex = (currentFrameIndex + 1) % frames.size();
-    ui.previewLabel->setPixmap(QPixmap::fromImage(frames[currentFrameIndex]));
+    ui.previewLabel->setPixmap(QPixmap::fromImage(frames[currentFrameIndex].image));
     ui.timelineSlider->blockSignals(true);
     ui.timelineSlider->setValue(currentFrameIndex);
     ui.timelineSlider->blockSignals(false);
@@ -112,9 +119,13 @@ void AnimStudio::on_fpsSpinBox_valueChanged(int value) {
 }
 
 void AnimStudio::on_timelineSlider_valueChanged(int value) {
+    if (!currentData_.has_value())
+        return;
+
+    auto frames = currentData_.value().frames;
     if (value < frames.size()) {
         currentFrameIndex = value;
-        ui.previewLabel->setPixmap(QPixmap::fromImage(frames[value]));
+        ui.previewLabel->setPixmap(QPixmap::fromImage(frames[value].image));
     }
 }
 
@@ -143,8 +154,9 @@ void AnimStudio::resetControls(){
 void AnimStudio::on_actionClose_Image_Sequence_triggered()
 {
     resetControls();
-    frames.clear();
+    currentData_.reset();
     currentFrameIndex = 0;
+    updateMetadata();
 }
 
 void AnimStudio::on_actionImport_Animation_triggered()
@@ -276,15 +288,14 @@ void AnimStudio::onAnimationLoadFinished(const std::optional<AnimationData>& dat
         return;
     }
 
+    currentData_ = *data;
+
     // Directly assign frames
     currentFrameIndex = 0;
-    frames.clear();
-    for (const auto& frame : data->frames) {
-        frames.push_back(frame.image);
-    }
+    auto frames = currentData_.value().frames;
 
     if (!frames.isEmpty()) {
-        QImage first = frames.first();
+        QImage first = frames.first().image;
         originalFrameSize = first.size();
         resizeEvent(nullptr);
         ui.previewLabel->setPixmap(QPixmap::fromImage(first));
@@ -294,6 +305,8 @@ void AnimStudio::onAnimationLoadFinished(const std::optional<AnimationData>& dat
         ui.fpsSpinBox->setValue(data->fps);
         playbackTimer->start();
         ui.playPauseButton->setText("Pause");
+
+        updateMetadata();
     }
 }
 
@@ -312,4 +325,48 @@ void AnimStudio::resizeEvent(QResizeEvent* event)
 
     // Apply new size to preview label
     ui.previewLabel->setFixedSize(scaled);
+}
+
+void AnimStudio::setupMetadataDock() {
+    metadataDock = new QDockWidget(tr("Metadata"), this);
+    QWidget* container = new QWidget(metadataDock);
+    QFormLayout* form = new QFormLayout(container);
+
+    nameLabel = new QLabel; form->addRow(tr("Name:"), nameLabel);
+    typeLabel = new QLabel; form->addRow(tr("Type:"), typeLabel);
+    framesLabel = new QLabel; form->addRow(tr("Frames:"), framesLabel);
+    fpsLabel = new QLabel; form->addRow(tr("FPS:"), fpsLabel);
+    resolutionLabel = new QLabel; form->addRow(tr("Resolution:"), resolutionLabel);
+    keyframesLabel = new QLabel; form->addRow(tr("Keyframes:"), keyframesLabel);
+
+    container->setLayout(form);
+    metadataDock->setWidget(container);
+    addDockWidget(Qt::RightDockWidgetArea, metadataDock);
+    metadataDock->setTitleBarWidget(new QWidget(metadataDock));
+    metadataDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    metadataDock->show();
+}
+
+void AnimStudio::updateMetadata() {
+    if (currentData_.has_value()) {
+        auto data = currentData_.value();
+        nameLabel->setText(data.baseName);
+        typeLabel->setText(data.type);
+        framesLabel->setText(QString::number(data.frameCount));
+        fpsLabel->setText(QString::number(data.fps));
+        resolutionLabel->setText(QString("%1 x %2")
+            .arg(originalFrameSize.width())
+            .arg(originalFrameSize.height()));
+        // comma-list of keyframes
+        QStringList keys;
+        for (int i : data.keyframeIndices) keys << QString::number(i);
+        keyframesLabel->setText(keys.join(", "));
+    } else {
+        nameLabel->clear();
+        typeLabel->clear();
+        framesLabel->clear();
+        fpsLabel->clear();
+        resolutionLabel->clear();
+        keyframesLabel->clear();
+    }
 }

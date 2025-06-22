@@ -6,6 +6,8 @@
 #include <qimage>
 #include <qtimer>
 #include <QtConcurrent>
+#include <QDockWidget>
+#include <QLabel>
 #include <optional>
 #include "ui_AnimStudio.h"
 #include "AnimationData.h"
@@ -35,11 +37,23 @@ private slots:
 
 private:
     Ui::AnimStudioClass ui;
-    QVector<QImage> frames;
+    std::optional<AnimationData> currentData_;
     QTimer* playbackTimer = nullptr;
     int currentFrameIndex = 0;
     QSize originalFrameSize;
     SpinnerWidget* spinner = nullptr;
+
+    // new metadata dock & widgets
+    QDockWidget* metadataDock = nullptr;
+    QLabel* nameLabel = nullptr;
+    QLabel* typeLabel = nullptr;
+    QLabel* framesLabel = nullptr;
+    QLabel* fpsLabel = nullptr;
+    QLabel* resolutionLabel = nullptr;
+    QLabel* keyframesLabel = nullptr;
+
+    void setupMetadataDock();
+    void updateMetadata();
 
     void on_playPauseButton_clicked();
     void on_fpsSpinBox_valueChanged(int value);
