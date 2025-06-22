@@ -1,0 +1,202 @@
+﻿#include "AnimationController.h"
+#include <QtConcurrent>
+#include <QFutureWatcher>
+#include "Formats/Import/RawImporter.h"
+#include "Formats/Import/AniImporter.h"
+#include "Formats/Import/EffImporter.h"
+#include "Formats/Import/ApngImporter.h"
+
+AnimationController::AnimationController(QObject* parent)
+    : QObject(parent)
+{
+    connect(&m_timer, &QTimer::timeout, this, &AnimationController::advanceFrame);
+}
+
+void AnimationController::loadRawSequence(const QString& dir) {
+    beginLoad(AnimationType::Raw, dir);
+}
+void AnimationController::loadAniFile(const QString& path) {
+    beginLoad(AnimationType::Ani, path);
+}
+void AnimationController::loadEffFile(const QString& path) {
+    beginLoad(AnimationType::Eff, path);
+}
+void AnimationController::loadApngFile(const QString& path) {
+    beginLoad(AnimationType::Apng, path);
+}
+
+void AnimationController::beginLoad(AnimationType type, const QString& path) {
+    // stop current playback
+    pause();
+    m_currentIndex = 0;
+    QFuture<std::optional<AnimationData>> future;
+    switch (type) {
+    case AnimationType::Raw:
+        // RawImporter.importBlocking returns AnimationData, so wrap it
+        future = QtConcurrent::run([=]() {
+            AnimationData d = RawImporter::importBlocking(path);
+            return d.frameCount > 0 ? std::make_optional(d) : std::nullopt;
+            });
+        break;
+    case AnimationType::Ani:
+        future = QtConcurrent::run(AniImporter::importFromFile, path);
+        break;
+    case AnimationType::Eff:
+        future = QtConcurrent::run(EffImporter::importFromFile, path);
+        break;
+    case AnimationType::Apng:
+        future = QtConcurrent::run(ApngImporter::importFromFile, path);
+        break;
+    }
+    auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
+    connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
+        auto result = watcher->result();
+        watcher->deleteLater();
+        finishLoad(result, result.has_value() ? QString() : "Failed to load animation");
+        });
+    watcher->setFuture(future);
+}
+
+void AnimationController::finishLoad(const std::optional<AnimationData>& data, const QString& error) {
+    if (!data) {
+        emit errorOccurred(error);
+        return;
+    }
+    m_data = *data;
+    m_data.originalSize = m_data.frames.isEmpty() ? QSize() : m_data.frames[0].image.size();
+    emit metadataChanged(m_data);
+    // immediately show first frame
+    if (!m_data.frames.isEmpty()) {
+        emit frameReady(m_data.frames[0].image, 0);
+        play();
+    }
+}
+
+const QVector<AnimationFrame>& AnimationController::getCurrentFrames() const {
+    if (m_showQuantized && !m_data.quantizedFrames.isEmpty()) {
+        return m_data.quantizedFrames;
+    }
+    return m_data.frames;
+}
+
+void AnimationController::advanceFrame() {
+    const auto& frames = getCurrentFrames();
+    if (frames.isEmpty()) return;
+
+    // 1) compute next index
+    int next = m_currentIndex + 1;
+
+    // 2) if we've gone off the end, wrap to keyframe or 0
+    if (next >= frames.size()) {
+        if (!m_data.keyframeIndices.empty()) {
+            next = m_data.keyframeIndices.front();
+        } else {
+            next = 0;
+        }
+    }
+
+    // 3) commit and emit
+    m_currentIndex = next;
+
+    // now grab the frame by reference
+    const AnimationFrame& f = frames[m_currentIndex];
+    emit frameReady(f.image, m_currentIndex);
+}
+
+void AnimationController::play() {
+    m_timer.start(1000 / m_data.fps);
+    emit playStateChanged(true);
+}
+void AnimationController::pause() {
+    m_timer.stop();
+    emit playStateChanged(false);
+}
+void AnimationController::setFps(int fps) {
+    if (fps > 0) {
+        m_data.fps = fps;
+        if (m_timer.isActive())
+            m_timer.start(1000 / fps);
+        emit metadataChanged(m_data);
+    }
+}
+
+void AnimationController::seekFrame(int idx) {
+    const auto& frames = getCurrentFrames();
+    if (idx < 0 || idx >= frames.size()) return;
+
+    m_currentIndex = idx;
+    const AnimationFrame& f = frames[m_currentIndex];
+    emit frameReady(f.image, m_currentIndex);
+}
+
+bool AnimationController::isPlaying() const {
+    return m_timer.isActive();
+}
+
+void AnimationController::setLoopPoint(int frame) {
+    if (frame >= 0 && frame < m_data.frameCount) {
+        m_data.keyframeIndices = { frame };
+        emit metadataChanged(m_data);
+    }
+}
+
+void AnimationController::setAllKeyframes(bool all) {
+    m_data.keyframeIndices.clear();
+    if (all) {
+        m_data.keyframeIndices.resize(m_data.frameCount);
+        std::iota(m_data.keyframeIndices.begin(), m_data.keyframeIndices.end(), 0);
+    }
+    emit metadataChanged(m_data);
+}
+
+bool AnimationController::getAllKeyframes() const {
+    return m_data.keyframeIndices.size() == m_data.frames.size();
+}
+
+void AnimationController::quantize() {
+    m_data.quantizedFrames.clear();
+    m_data.quantizedFrames = m_data.frames;
+    auto result = Quantizer::quantize(m_data.quantizedFrames);
+    if (!result) {
+        emit errorOccurred("Quantize failed");
+        return;
+    }
+    m_data.quantizedFrames = std::move(result->frames);
+    m_data.quantized = true;
+    m_showQuantized = true;
+}
+
+void AnimationController::undoQuantize() {
+    if (m_data.quantized) {
+        m_showQuantized = false;
+        m_data.quantizedFrames.clear();
+        m_data.quantized = false;
+    }
+}
+
+bool AnimationController::canUndoQuantize() const {
+    return m_data.quantized;
+}
+
+void AnimationController::toggleShowQuantized() {
+    m_showQuantized = !m_showQuantized;
+}
+
+bool AnimationController::isShowingQuantized() const {
+    return m_showQuantized;
+}
+
+void AnimationController::setBaseName(const QString & name) {
+    m_data.baseName = name;
+    emit metadataChanged(m_data);
+}
+
+QSize AnimationController::getResolution() const {
+    return m_data.originalSize;
+}
+
+void AnimationController::clear() {
+    pause();
+    m_data = AnimationData{};
+    emit metadataChanged(m_data);
+}

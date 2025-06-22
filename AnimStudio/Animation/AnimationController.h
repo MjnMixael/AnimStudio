@@ -1,0 +1,73 @@
+#pragma once
+
+#include <QObject>
+#include <QTimer>
+#include <optional>
+#include <QImage>
+#include <QSize>
+
+#include "AnimationData.h"
+#include "Quantizer.h"
+
+class AnimationController : public QObject {
+    Q_OBJECT
+
+public:
+    explicit AnimationController(QObject* parent = nullptr);
+
+    // loading
+    void loadRawSequence(const QString& dir);
+    void loadAniFile(const QString& path);
+    void loadEffFile(const QString& path);
+    void loadApngFile(const QString& path);
+
+    // playback control
+    void play();
+    void pause();
+    void setFps(int fps);
+    void seekFrame(int frameIndex);
+    bool isPlaying() const;
+
+    // keyframes / looping
+    void setLoopPoint(int frame);
+    void setAllKeyframes(bool all);
+    bool getAllKeyframes() const;
+
+    // quantization
+    void quantize();
+    void undoQuantize();
+    bool canUndoQuantize() const;
+    void toggleShowQuantized();
+    bool isShowingQuantized() const;
+
+    // metadata
+    void setBaseName(const QString& name);
+    QSize getResolution() const;
+
+    // clean up
+    void clear();
+
+signals:
+    // emitted whenever a new frame should be shown
+    void frameReady(const QImage& image, int index);
+    // emitted when metadata (frameCount, fps, baseName, keyframes…) changes
+    void metadataChanged(const AnimationData& data);
+    // emitted if a load or import fails
+    void errorOccurred(const QString& message);
+    // emitted whenever the play state changes
+    void playStateChanged(bool playing);
+
+private slots:
+    void advanceFrame();
+
+private:
+    void beginLoad(AnimationType type, const QString& path);
+    void finishLoad(const std::optional<AnimationData>& data, const QString& error);
+
+    const QVector<AnimationFrame>& getCurrentFrames() const;
+
+    AnimationData         m_data;
+    QTimer                m_timer;
+    int                   m_currentIndex = 0;
+    bool                  m_showQuantized = false;
+};

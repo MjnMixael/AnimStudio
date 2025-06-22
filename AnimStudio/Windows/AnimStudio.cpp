@@ -22,20 +22,45 @@
 AnimStudio::AnimStudio(QWidget* parent)
     : QMainWindow(parent)
     , ui()
-    , playbackTimer(new QTimer(this))
-    , currentFrameIndex(0)
 {
     ui.setupUi(this);
 
+    // 1) construct your controller
+    animCtrl = new AnimationController(this);
+
     setupMetadataDock();
 
-    // Timer for frame cycling
-    playbackTimer->setInterval(100); // 10 FPS
+    // 2) Controller -> UI
+    connect(animCtrl, &AnimationController::frameReady,
+        this, [&](const QImage& img, int idx) {
+            ui.previewLabel->setPixmap(QPixmap::fromImage(img));
+            ui.timelineSlider->blockSignals(true);
+            ui.timelineSlider->setValue(idx);
+            ui.timelineSlider->blockSignals(false);
+        });
 
-    // Connect the widgets to the code
-    connect(playbackTimer, &QTimer::timeout,this, &AnimStudio::updatePreviewFrame);
-    connect(ui.playPauseButton, &QPushButton::clicked, this, &AnimStudio::on_playPauseButton_clicked);
-    connect(ui.timelineSlider, &QSlider::valueChanged, this, &AnimStudio::on_timelineSlider_valueChanged);
+    connect(animCtrl, &AnimationController::metadataChanged,
+        this, [&](const AnimationData& d) {
+            // stop spinner & show preview:
+            deleteSpinner();
+            ui.previewLabel->show();
+
+            // update UI for new data:
+            updateMetadata(d);
+            ui.timelineSlider->setMaximum(d.frameCount - 1);
+            ui.timelineSlider->setValue(0);
+        });
+
+    connect(animCtrl, &AnimationController::errorOccurred,
+        this, [&](const QString& msg) {
+            deleteSpinner();
+            QMessageBox::critical(this, "Import Failed", msg);
+        });
+
+    connect(animCtrl, &AnimationController::playStateChanged,
+        this, [&](bool playing) {
+            ui.playPauseButton->setText(playing ? "Pause" : "Play");
+        });
 
     // No scrollbars in the animation preview area
     ui.scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -44,20 +69,6 @@ AnimStudio::AnimStudio(QWidget* parent)
 
 AnimStudio::~AnimStudio()
 {
-}
-
-QVector<QImage> loadImageSequence(const QString& dirPath, const QStringList& filters) {
-    QVector<QImage> images;
-    QDir directory(dirPath);
-    QStringList files = directory.entryList(filters, QDir::Files, QDir::Name);
-
-    for (const QString& file : files) {
-        QImage img(dirPath + "/" + file);
-        if (!img.isNull()) {
-            images.append(img);
-        }
-    }
-    return images;
 }
 
 void AnimStudio::createSpinner(QWidget* parent) {
@@ -85,63 +96,35 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
     if (dir.isEmpty())
         return;
 
-    loadAnimation(AnimationType::Raw, dir);
-}
+    // hide the old preview and show spinner while loading
+    ui.previewLabel->hide();
+    resetControls();
+    createSpinner(ui.scrollArea);
 
-void AnimStudio::updatePreviewFrame()
-{
-    if (currentData_.value().frames.isEmpty())
-        return;
-
-    const auto& frames = currentData_->frames;
-
-    // compute next frame index
-    int next = currentFrameIndex + 1;
-    if (next >= frames.size()) {
-        // if we've got any keyframes stored, use the first one as loop-back
-        if (!currentData_->keyframeIndices.empty()) {
-            next = currentData_->keyframeIndices.front();
-        } else {
-            // fallback to frame 0
-            next = 0;
-        }
-    }
-    currentFrameIndex = next;
-
-    ui.previewLabel->setPixmap(QPixmap::fromImage(frames[currentFrameIndex].image));
-    ui.timelineSlider->blockSignals(true);
-    ui.timelineSlider->setValue(currentFrameIndex);
-    ui.timelineSlider->blockSignals(false);
+    animCtrl->loadRawSequence(dir);
 }
 
 void AnimStudio::on_playPauseButton_clicked() {
-    if (playbackTimer->isActive()) {
-        playbackTimer->stop();
-        ui.playPauseButton->setText("Play");
+    // Toggle based on the button’s current label
+    if (animCtrl->isPlaying()) {
+        animCtrl->pause();
     } else {
-        playbackTimer->start();
-        ui.playPauseButton->setText("Pause");
+        animCtrl->play();
     }
 }
 
 void AnimStudio::on_fpsSpinBox_valueChanged(int value) {
-    playbackTimer->setInterval(1000 / value); // FPS to ms
+    animCtrl->setFps(value); // FPS to ms
 }
 
 void AnimStudio::on_timelineSlider_valueChanged(int value) {
-    if (!currentData_.has_value())
-        return;
-
-    auto frames = currentData_.value().frames;
-    if (value < frames.size()) {
-        currentFrameIndex = value;
-        ui.previewLabel->setPixmap(QPixmap::fromImage(frames[value].image));
-    }
+    // Jump the controller to the requested frame
+    animCtrl->seekFrame(value);
 }
 
 void AnimStudio::resetControls(){
     // Stop playback
-    playbackTimer->stop();
+    animCtrl->pause();
     ui.playPauseButton->setText("Play");
 
     // Reset timeline slider
@@ -164,9 +147,13 @@ void AnimStudio::resetControls(){
 void AnimStudio::on_actionClose_Image_Sequence_triggered()
 {
     resetControls();
-    currentData_.reset();
-    currentFrameIndex = 0;
-    updateMetadata();
+    animCtrl->clear();
+    updateMetadata(std::nullopt);
+}
+
+void AnimStudio::on_actionExit_triggered()
+{
+    close();
 }
 
 void AnimStudio::on_actionImport_Animation_triggered()
@@ -177,145 +164,26 @@ void AnimStudio::on_actionImport_Animation_triggered()
         QString(),
         "Animation Files (*.ani *.eff *.png);;All Files (*.*)"
     );
-
     if (filePath.isEmpty())
         return;
 
-    QFileInfo fileInfo(filePath);
-    QString extension = fileInfo.suffix().toLower();
-
-    if (extension == "eff") {
-        loadAnimation(AnimationType::Eff, filePath);
-        return;
-    } else if (extension == "ani") {
-        loadAnimation(AnimationType::Ani, filePath);
-    } else if (extension == "png") {
-        loadAnimation(AnimationType::Apng, filePath);
-    } else {
-        QMessageBox::warning(this, "Unsupported Format", "The selected file format is not supported.");
-        return;
-    }
-}
-
-void AnimStudio::on_actionExit_triggered()
-{
-    close();
-}
-
-void AnimStudio::loadAnimation(AnimationType type, QString path)
-{
+    // show spinner while loading
     ui.previewLabel->hide();
     resetControls();
     createSpinner(ui.scrollArea);
-    
-    switch (type) {
-        case AnimationType::Ani: {
-            QFuture<std::optional<AnimationData>> future = QtConcurrent::run(AniImporter::importFromFile, path);
-            auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
 
-            connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
-                std::optional<AnimationData> result = watcher->result();
-                watcher->deleteLater();
-                if (result.has_value()) {
-                    onAnimationLoadFinished(result);
-                } else {
-                    onAnimationLoadFinished(std::nullopt, "Failed to import the ANI animation.");
-                }
-                });
-
-            watcher->setFuture(future);
-            return;
-        }
-        case AnimationType::Eff: {
-            QFuture<std::optional<AnimationData>> future = QtConcurrent::run(EffImporter::importFromFile, path);
-            auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
-
-            connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
-                std::optional<AnimationData> result = watcher->result();
-                watcher->deleteLater();
-
-                if (result.has_value()) {
-                    onAnimationLoadFinished(result);
-                } else {
-                    onAnimationLoadFinished(std::nullopt, "Failed to import the selected animation.");
-                }
-                });
-
-            watcher->setFuture(future);
-            return;
-        }
-        case AnimationType::Apng: {
-            QFuture<std::optional<AnimationData>> future = QtConcurrent::run(ApngImporter::importFromFile, path);
-            auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
-
-            connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
-                std::optional<AnimationData> result = watcher->result();
-                watcher->deleteLater();
-
-                if (result.has_value()) {
-                    onAnimationLoadFinished(result);
-                } else {
-                    onAnimationLoadFinished(std::nullopt, "Failed to import the selected animation.");
-                }
-                });
-
-            watcher->setFuture(future);
-            return;
-        }
-        case AnimationType::Raw: {
-            QFuture<AnimationData> future = QtConcurrent::run(RawImporter::importBlocking, path);
-            QFutureWatcher<AnimationData>* watcher = new QFutureWatcher<AnimationData>(this);
-
-            connect(watcher, &QFutureWatcher<AnimationData>::finished, this, [=]() {
-                deleteSpinner();
-                AnimationData result = watcher->result();
-                watcher->deleteLater();
-
-                if (result.frameCount > 0) {
-                    onAnimationLoadFinished(result);
-                } else {
-                    onAnimationLoadFinished(std::nullopt, "No valid frames found in the selected directory.");
-                }
-                });
-
-            watcher->setFuture(future);
-            return;
-        }
-        default: {
-            QMessageBox::warning(this, "Unsupported Format", "The selected animation format is not supported.");
-            break;
-        }
-    }
-}
-
-void AnimStudio::onAnimationLoadFinished(const std::optional<AnimationData>& data, const QString& errorMessage)
-{
-    deleteSpinner();
-    ui.previewLabel->show();
-
-    if (!data.has_value()) {
-        QMessageBox::critical(this, "Import Failed", errorMessage.isEmpty() ? "Unknown error occurred." : errorMessage);
-        return;
-    }
-
-    currentData_ = *data;
-
-    // Directly assign frames
-    currentFrameIndex = 0;
-    auto frames = currentData_.value().frames;
-
-    if (!frames.isEmpty()) {
-        QImage first = frames.first().image;
-        originalFrameSize = first.size();
-        resizeEvent(nullptr);
-        ui.previewLabel->setPixmap(QPixmap::fromImage(first));
-
-        ui.timelineSlider->setMaximum(frames.size() - 1);
-        ui.timelineSlider->setValue(0);
-        playbackTimer->start();
-        ui.playPauseButton->setText("Pause");
-
-        updateMetadata();
+    // dispatch to controller
+    QString ext = QFileInfo(filePath).suffix().toLower();
+    if (ext == "ani") {
+        animCtrl->loadAniFile(filePath);
+    } else if (ext == "eff") {
+        animCtrl->loadEffFile(filePath);
+    } else if (ext == "png") {
+        animCtrl->loadApngFile(filePath);
+    } else {
+        deleteSpinner();
+        QMessageBox::warning(this, "Unsupported Format",
+            "The selected file format is not supported.");
     }
 }
 
@@ -323,13 +191,15 @@ void AnimStudio::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
 
-    if (originalFrameSize.isEmpty()) return;
+    QSize resolution = animCtrl->getResolution();
+
+    if (resolution.isEmpty()) return;
 
     // Get the current size of the scroll area viewport
     QSize available = ui.scrollArea->viewport()->size();
 
     // Calculate scaled size that fits while preserving aspect ratio
-    QSize scaled = originalFrameSize;
+    QSize scaled = resolution;
     scaled.scale(available, Qt::KeepAspectRatio);
 
     // Apply new size to preview label
@@ -394,17 +264,17 @@ void AnimStudio::setupMetadataDock() {
     metadataDock->show();
 }
 
-void AnimStudio::updateMetadata() {
-    const bool hasData = currentData_.has_value();
+void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
+    const bool hasData = anim.has_value();
     nameEdit->setEnabled(hasData);
     fpsSpin->setEnabled(hasData);
-    loopPointSpin->setEnabled(hasData);
+    loopPointSpin->setEnabled(!animCtrl->getAllKeyframes());
     allKeyframesCheck->setEnabled(hasData);
     quantizeBtn->setEnabled(hasData);
-    undoQuantBtn->setEnabled(hasData && !backupFrames_.isEmpty());
+    undoQuantBtn->setEnabled(hasData && animCtrl->canUndoQuantize());
 
     if (hasData) {
-        auto data = currentData_.value();
+        auto data = anim.value();
 
         nameEdit->setText(data.baseName);
 
@@ -432,8 +302,8 @@ void AnimStudio::updateMetadata() {
 
         framesLabel->setText(QString::number(data.frameCount));
         resolutionLabel->setText(QString("%1 x %2")
-            .arg(originalFrameSize.width())
-            .arg(originalFrameSize.height()));
+            .arg(data.originalSize.width())
+            .arg(data.originalSize.height()));
         // comma-list of keyframes
         QStringList keys;
         for (int i : data.keyframeIndices) keys << QString::number(i);
@@ -458,72 +328,32 @@ void AnimStudio::updateMetadata() {
         resolutionLabel->clear();
         loopPointSpin->setValue(0);
         allKeyframesCheck->setChecked(false);
-        backupFrames_.clear();
     }
 }
 
 void AnimStudio::onNameEditFinished() {
-    if (!currentData_) return;
-
-    // write back into our stored data
-    currentData_->baseName = nameEdit->text();
+    animCtrl->setBaseName(nameEdit->text());
 }
 
 void AnimStudio::onMetadataFpsChanged(int fps)
 {
-    if (!currentData_) return;
-
-    // update our stored data
-    currentData_->fps = fps;
-
-    // drive the playback timer
-    playbackTimer->setInterval(1000 / fps);
+    animCtrl->setFps(fps);
 }
 
 void AnimStudio::onLoopPointChanged(int frame) {
-    if (!currentData_ || allKeyframesCheck->isChecked())
+    if (allKeyframesCheck->isChecked())
         return;
 
     // single keyframe mode:
-    currentData_->keyframeIndices = { frame };
+    animCtrl->setLoopPoint(frame);
 }
 
 void AnimStudio::onAllKeyframesToggled(bool all) {
-    if (!currentData_)
-        return;
-
-    if (all) {
-        // fill every index
-        currentData_->keyframeIndices.resize(currentData_->frameCount);
-        std::iota(currentData_->keyframeIndices.begin(),
-            currentData_->keyframeIndices.end(), 0);
-        loopPointSpin->setEnabled(false);
-    } else {
-        // switch back to single-key mode at whatever spin value
-        loopPointSpin->setEnabled(true);
-        int f = loopPointSpin->value();
-        currentData_->keyframeIndices = { f };
-    }
+    animCtrl->setAllKeyframes(all);
 }
 
 void AnimStudio::onQuantizeClicked() {
-    if (!currentData_) return;
-
-    // 1) backup originals
-    backupFrames_ = currentData_->frames;
-
-    // 2) run quantizer (empty palette = auto; you can extend to pick palette)
-    auto result = Quantizer::quantize(currentData_->frames);
-    if (!result) {
-        QMessageBox::warning(this, tr("Quantize Failed"),
-            tr("Color reduction failed."));
-        return;
-    }
-
-    // 3) swap in quantized frames & reset playback
-    currentData_->frames = std::move(result->frames);
-    currentFrameIndex = 0;
-    updatePreviewFrame();
+    animCtrl->quantize();
 
     // 4) update button states
     undoQuantBtn->setEnabled(true);
@@ -531,12 +361,10 @@ void AnimStudio::onQuantizeClicked() {
 }
 
 void AnimStudio::onUndoQuantize() {
-    if (backupFrames_.isEmpty() || !currentData_) return;
+    if (!animCtrl->canUndoQuantize()) return;
 
     // restore
-    currentData_->frames = std::move(backupFrames_);
-    currentFrameIndex = 0;
-    updatePreviewFrame();
+    animCtrl->undoQuantize();
 
     // reset button states
     undoQuantBtn->setEnabled(false);

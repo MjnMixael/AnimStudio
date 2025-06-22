@@ -113,6 +113,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="Animation\AnimationController.cpp" />
     <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp" />
     <ClCompile Include="Dependencies\libimagequant\blur.c" />
     <ClCompile Include="Dependencies\libimagequant\kmeans.c" />
@@ -168,6 +169,7 @@
     <QtMoc Include="Widgets\SpinnerWidget.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="Animation\AnimationController.h" />
     <ClInclude Include="Animation\AnimationData.h" />
     <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h" />
     <ClInclude Include="Dependencies\libimagequant\blur.h" />

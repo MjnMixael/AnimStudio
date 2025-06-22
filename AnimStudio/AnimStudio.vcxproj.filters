@@ -194,6 +194,9 @@
     <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp">
       <Filter>Source Files\Dependencies\apngdisassembler</Filter>
     </ClCompile>
+    <ClCompile Include="Animation\AnimationController.cpp">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -201,6 +204,9 @@
     </QtMoc>
     <QtMoc Include="Windows\AnimStudio.h">
       <Filter>Source Files\Windows</Filter>
+    </QtMoc>
+    <QtMoc Include="Animation\AnimationController.h">
+      <Filter>Source Files\Animation</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>

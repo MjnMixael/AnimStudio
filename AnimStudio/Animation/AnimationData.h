@@ -4,6 +4,7 @@
 #include <QString>
 #include <QImage>
 #include <QVector>
+#include <QSize>
 
 enum class AnimationType {
     Eff,
@@ -22,9 +23,12 @@ struct AnimationData {
     QString baseName;
     QString type; // DDS, PNG, etc.
     AnimationType animationType = AnimationType::Raw;
+    QSize originalSize; // size of the original frames
     int frameCount = 0;
     int fps = 15;
     QVector<int> keyframeIndices;
 
     QVector<AnimationFrame> frames;
+    QVector<AnimationFrame> quantizedFrames;
+    bool quantized = false;
 };

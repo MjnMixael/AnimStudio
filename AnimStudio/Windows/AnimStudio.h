@@ -14,6 +14,7 @@
 #include <optional>
 #include "ui_AnimStudio.h"
 #include "Animation/AnimationData.h"
+#include "Animation/AnimationController.h"
 #include "Widgets/SpinnerWidget.h"
 
 QT_BEGIN_NAMESPACE
@@ -36,17 +37,14 @@ private slots:
     void on_actionImport_Animation_triggered();
     void on_actionExit_triggered();
 
-    void updatePreviewFrame();
+    void on_playPauseButton_clicked();
+    void on_timelineSlider_valueChanged(int value);
 
 private:
     Ui::AnimStudioClass ui;
-    std::optional<AnimationData> currentData_;
-    QTimer* playbackTimer = nullptr;
-    int currentFrameIndex = 0;
-    QSize originalFrameSize;
-    SpinnerWidget* spinner = nullptr;
+    AnimationController* animCtrl = nullptr;
 
-    QVector<AnimationFrame> backupFrames_;
+    SpinnerWidget* spinner = nullptr;
 
     // new metadata dock & widgets
     QDockWidget* metadataDock = nullptr;
@@ -62,7 +60,7 @@ private:
     QPushButton* undoQuantBtn = nullptr;
 
     void setupMetadataDock();
-    void updateMetadata();
+    void updateMetadata(std::optional<AnimationData> data);
     void onNameEditFinished();
     void onMetadataFpsChanged(int fps);
     void onLoopPointChanged(int frame);
@@ -70,12 +68,10 @@ private:
     void onQuantizeClicked();
     void onUndoQuantize();
 
-    void on_playPauseButton_clicked();
+    // Unused?
     void on_fpsSpinBox_valueChanged(int value);
-    void on_timelineSlider_valueChanged(int value);
+    
 
-    void loadAnimation(AnimationType type, QString path);
-    void onAnimationLoadFinished(const std::optional<AnimationData>& data, const QString& errorMessage = "");
     void resetControls();
 
     void createSpinner(QWidget* parent);
