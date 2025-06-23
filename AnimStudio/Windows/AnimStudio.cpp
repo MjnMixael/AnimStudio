@@ -18,6 +18,13 @@
 #include <QMessageBox>
 #include <optional>
 #include <QFormLayout>
+#include <QFile>
+#ifdef Q_OS_WIN
+#  include <windows.h>
+#  include <psapi.h>
+#elif defined(Q_OS_LINUX)
+#  include <unistd.h>
+#endif
 
 AnimStudio::AnimStudio(QWidget* parent)
     : QMainWindow(parent)
@@ -70,7 +77,32 @@ AnimStudio::AnimStudio(QWidget* parent)
             adjustPreviewSize();
         });
 
+    connect(animCtrl, &AnimationController::quantizationProgress,
+        this, [&](int pct) {
+            ui.statusBar->showMessage(
+                QString("Reducing colors: %1%").arg(pct)
+            );
+        });
+
+    connect(animCtrl, &AnimationController::quantizationFinished,
+        this, [&]() {
+            ui.statusBar->showMessage("Color reduction complete!");
+        });
+
+    // Create a permanent label on the right side of the statusbar
+    m_rightStatusLabel = new QLabel(this);
+    m_rightStatusLabel->setText("Ready");
+    ui.statusBar->addPermanentWidget(m_rightStatusLabel);
+    m_memTimer = new QTimer(this);
+    m_memTimer->setInterval(5000);
+    connect(m_memTimer, &QTimer::timeout,
+        this, &AnimStudio::updateMemoryUsage);
+    m_memTimer->start();
+    updateMemoryUsage();
+
     updateMetadata(std::nullopt);
+
+    ui.statusBar->showMessage("Ready!");
 }
 
 AnimStudio::~AnimStudio()
@@ -94,20 +126,6 @@ void AnimStudio::deleteSpinner() {
         spinner->deleteLater();
         spinner = nullptr;
     }
-}
-
-void AnimStudio::on_actionOpenImageSequence_triggered()
-{
-    QString dir = QFileDialog::getExistingDirectory(this, "Select Image Sequence Directory");
-    if (dir.isEmpty())
-        return;
-
-    // hide the old preview and show spinner while loading
-    ui.previewLabel->hide();
-    resetInterface();
-    createSpinner(ui.playerScrollArea);
-
-    animCtrl->loadRawSequence(dir);
 }
 
 void AnimStudio::on_playPauseButton_clicked() {
@@ -158,16 +176,23 @@ void AnimStudio::resetInterface(){
     ui.previewLabel->setAlignment(Qt::AlignCenter);
 }
 
-void AnimStudio::on_actionClose_Image_Sequence_triggered()
-{
-    resetInterface();
-    animCtrl->clear();
-    updateMetadata(std::nullopt);
-}
-
 void AnimStudio::on_actionExit_triggered()
 {
     close();
+}
+
+void AnimStudio::on_actionOpenImageSequence_triggered()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, "Select Image Sequence Directory");
+    if (dir.isEmpty())
+        return;
+
+    // hide the old preview and show spinner while loading
+    ui.previewLabel->hide();
+    resetInterface();
+    createSpinner(ui.playerScrollArea);
+
+    animCtrl->loadRawSequence(dir);
 }
 
 void AnimStudio::on_actionImport_Animation_triggered()
@@ -201,6 +226,62 @@ void AnimStudio::on_actionImport_Animation_triggered()
     }
 }
 
+void AnimStudio::on_actionClose_Image_Sequence_triggered()
+{
+    resetInterface();
+    animCtrl->clear();
+    updateMetadata(std::nullopt);
+}
+
+void AnimStudio::on_actionExport_Animation_triggered()
+{
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Export Animation",
+        QString(),
+        "Animation Files (*.ani *.eff *.png);;All Files (*.*)"
+    );
+    if (filePath.isEmpty())
+        return;
+    // dispatch to controller
+    //animCtrl->exportAnimation(filePath);
+}
+
+void AnimStudio::on_actionExport_All_Frames_triggered()
+{
+    QString dir = QFileDialog::getExistingDirectory(this, "Export All Frames Directory");
+    if (dir.isEmpty())
+        return;
+    // dispatch to controller
+    //animCtrl->exportAllFrames(dir);
+}
+
+void AnimStudio::on_actionExport_Current_Frame_triggered()
+{
+    QString filePath = QFileDialog::getSaveFileName(
+        this,
+        "Export Current Frame",
+        QString(),
+        "Image Files (*.png *.jpg *.bmp);;All Files (*.*)"
+    );
+    if (filePath.isEmpty())
+        return;
+    // dispatch to controller
+    //animCtrl->exportCurrentFrame(filePath);
+}
+
+void AnimStudio::on_actionReduce_Colors_triggered()
+{
+    // show spinner while quantizing
+    //createSpinner(ui.playerScrollArea);
+    animCtrl->quantize();
+}
+
+void AnimStudio::on_actionShow_Reduced_Colors_toggled(bool checked)
+{
+    animCtrl->toggleShowQuantized(checked);
+}
+
 void AnimStudio::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
@@ -226,11 +307,18 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     ui.keyframeAllCheckBox->setEnabled(hasData);
     ui.playPauseButton->setEnabled(hasData);
     ui.timelineSlider->setEnabled(hasData);
-    //quantizeBtn->setEnabled(hasData);
-    //undoQuantBtn->setEnabled(hasData && animCtrl->canUndoQuantize());
+
+    // Toolbar buttons
+    ui.actionExport_Animation->setEnabled(hasData);
+    ui.actionExport_All_Frames->setEnabled(hasData);
+    ui.actionExport_Current_Frame->setEnabled(hasData);
+    ui.actionReduce_Colors->setEnabled(hasData);
+    ui.actionShow_Reduced_Colors->setEnabled(hasData && anim.value().quantized);
 
     if (hasData) {
         auto data = anim.value();
+
+        ui.actionShow_Reduced_Colors->setChecked(data.quantized);
 
         ui.nameEdit->setText(data.baseName);
 
@@ -276,21 +364,30 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     }
 }
 
-void AnimStudio::onQuantizeClicked() {
-    animCtrl->quantize();
-
-    // 4) update button states
-    //undoQuantBtn->setEnabled(true);
-    //quantizeBtn->setEnabled(false);
+qint64 AnimStudio::currentMemoryBytes() {
+#ifdef Q_OS_WIN
+    PROCESS_MEMORY_COUNTERS pmc;
+    if (GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
+        return pmc.WorkingSetSize;
+    }
+    return 0;
+#elif defined(Q_OS_LINUX)
+    QFile f("/proc/self/statm");
+    if (!f.open(QIODevice::ReadOnly)) return 0;
+    QByteArray data = f.readLine();
+    f.close();
+    // statm: size resident shared text lib data dt
+    qint64 resident = data.split(' ')[1].toLongLong();
+    return resident * sysconf(_SC_PAGESIZE);
+#else
+    return 0; // stub for other platforms
+#endif
 }
 
-void AnimStudio::onUndoQuantize() {
-    if (!animCtrl->canUndoQuantize()) return;
-
-    // restore
-    animCtrl->undoQuantize();
-
-    // reset button states
-    //undoQuantBtn->setEnabled(false);
-    //quantizeBtn->setEnabled(true);
+void AnimStudio::updateMemoryUsage() {
+    qint64 bytes = currentMemoryBytes();
+    double mb = bytes / 1024.0 / 1024.0;
+    m_rightStatusLabel->setText(
+        QStringLiteral("RAM: %1 MB").arg(mb, 0, 'f', 1)
+    );
 }

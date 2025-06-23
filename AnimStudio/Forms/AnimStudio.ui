@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1036</width>
-    <height>474</height>
+    <height>567</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -54,7 +54,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>764</width>
-                <height>314</height>
+                <height>397</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -252,20 +252,7 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionOpenImageSequence"/>
-    <addaction name="actionClose_Image_Sequence"/>
-    <addaction name="actionImport_Animation"/>
     <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuExport">
-    <property name="title">
-     <string>Export</string>
-    </property>
-    <addaction name="actionAs_ANI"/>
-    <addaction name="actionAs_EFF"/>
-    <addaction name="actionAs_APNG"/>
-    <addaction name="separator"/>
-    <addaction name="actionFrames_as"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -273,7 +260,6 @@
     </property>
    </widget>
    <addaction name="menuFile"/>
-   <addaction name="menuExport"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -321,38 +307,40 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionOpenImageSequence"/>
+   <addaction name="actionImport_Animation"/>
+   <addaction name="separator"/>
+   <addaction name="actionClose_Image_Sequence"/>
+   <addaction name="separator"/>
+   <addaction name="actionExport_Animation"/>
+   <addaction name="actionExport_All_Frames"/>
+   <addaction name="actionExport_Current_Frame"/>
+   <addaction name="separator"/>
+   <addaction name="actionReduce_Colors"/>
+   <addaction name="actionShow_Reduced_Colors"/>
   </widget>
   <action name="actionOpenImageSequence">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/open.png</normaloff>:/AnimStudio/Resources/open.png</iconset>
+   </property>
    <property name="text">
     <string>Open Image Sequence</string>
    </property>
   </action>
-  <action name="actionAs_ANI">
-   <property name="text">
-    <string>As ANI...</string>
-   </property>
-  </action>
-  <action name="actionAs_EFF">
-   <property name="text">
-    <string>As EFF...</string>
-   </property>
-  </action>
-  <action name="actionAs_APNG">
-   <property name="text">
-    <string>As APNG...</string>
-   </property>
-  </action>
   <action name="actionClose_Image_Sequence">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/close.png</normaloff>:/AnimStudio/Resources/close.png</iconset>
+   </property>
    <property name="text">
     <string>Close Image Sequence</string>
    </property>
   </action>
-  <action name="actionFrames_as">
-   <property name="text">
-    <string>Frames as...</string>
-   </property>
-  </action>
   <action name="actionImport_Animation">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/import.png</normaloff>:/AnimStudio/Resources/import.png</iconset>
+   </property>
    <property name="text">
     <string>Import Animation</string>
    </property>
@@ -360,6 +348,55 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionExport_Animation">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/export.png</normaloff>:/AnimStudio/Resources/export.png</iconset>
+   </property>
+   <property name="text">
+    <string>Export Animation</string>
+   </property>
+  </action>
+  <action name="actionExport_All_Frames">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/export_all_frames.png</normaloff>:/AnimStudio/Resources/export_all_frames.png</iconset>
+   </property>
+   <property name="text">
+    <string>Export All Frames</string>
+   </property>
+  </action>
+  <action name="actionExport_Current_Frame">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/export_frame.png</normaloff>:/AnimStudio/Resources/export_frame.png</iconset>
+   </property>
+   <property name="text">
+    <string>Export Current Frame</string>
+   </property>
+  </action>
+  <action name="actionReduce_Colors">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/quantize.png</normaloff>:/AnimStudio/Resources/quantize.png</iconset>
+   </property>
+   <property name="text">
+    <string>Reduce Colors</string>
+   </property>
+  </action>
+  <action name="actionShow_Reduced_Colors">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/toggle_quantize_off.png</normaloff>
+     <normalon>:/AnimStudio/Resources/toggle_quantize_on.png</normalon>:/AnimStudio/Resources/toggle_quantize_off.png</iconset>
+   </property>
+   <property name="text">
+    <string>Show Reduced Colors</string>
    </property>
   </action>
  </widget>

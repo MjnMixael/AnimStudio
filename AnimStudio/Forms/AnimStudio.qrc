@@ -1,4 +1,15 @@
 <RCC>
-    <qresource prefix="AnimStudio">
-    </qresource>
+  <qresource prefix="AnimStudio">
+    <file>Resources/close.png</file>
+    <file>Resources/export.png</file>
+    <file>Resources/export_all_frames.png</file>
+    <file>Resources/export_frame.png</file>
+    <file>Resources/import.png</file>
+    <file>Resources/open.png</file>
+    <file>Resources/quantize.png</file>
+    <file>Resources/toggle_keyframes_off.png</file>
+    <file>Resources/toggle_keyframes_on.png</file>
+    <file>Resources/toggle_quantize_off.png</file>
+    <file>Resources/toggle_quantize_on.png</file>
+  </qresource>
 </RCC>

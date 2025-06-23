@@ -4,7 +4,13 @@
 #include <QByteArray>
 #include <QDebug>
 
-std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& src) {
+// C-callback shim for libimagequant progress callback
+static int liqProgressShim(float fraction, void* userInfo) {
+    auto* fn = static_cast<ProgressFn*>(userInfo);
+    return (*fn)(fraction) ? 1 : 0;
+}
+
+std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& src, ProgressFn progressCb) {
     if (src.isEmpty()) {
         qDebug() << "Quantize: no source frames provided";
         return std::nullopt;
@@ -20,6 +26,12 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     liq_set_max_colors(attr, 256);
     liq_set_quality(attr, 0, 100);
 
+    // If caller wants progress, register it on the attr
+    ProgressFn* cbPtr = nullptr;
+    if (progressCb) {
+        cbPtr = new ProgressFn(std::move(progressCb));
+    }
+
     liq_histogram* hist = liq_histogram_create(attr);
     if (!hist) {
         qDebug() << "Quantize: liq_histogram_create failed";
@@ -34,7 +46,9 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     int h = src[0].image.height();
 
     // 2) Add each frame to histogram
-    for (const AnimationFrame& frame : src) {
+    const size_t total = src.size();
+    for (size_t i = 0; i < total; ++i) {
+        const auto& frame = src[size_t(i)];
         QImage img = frame.image;
         if (img.format() != QImage::Format_RGBA8888) {
             img = img.convertToFormat(QImage::Format_RGBA8888);
@@ -59,6 +73,12 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         }
         liq_histogram_add_image(hist, attr, liqimg);
         liqImages.push_back(liqimg);
+
+        // Track progress adding each frame to the histogram. This is 30% of total.
+        if (cbPtr) {
+            float pct = float(i + 1) / float(total) * 30.0f;
+            (*cbPtr)(pct);
+        }
     }
 
     // 3) Generate global palette from histogram
@@ -71,6 +91,12 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         liq_attr_destroy(attr);
         return std::nullopt;
     }
+
+    // If we have a progress callback, notify that palette is done (jump to 40%)
+    if (cbPtr) {
+        (*cbPtr)(40.0f);
+    }
+
     // histogram no longer needed
     liq_histogram_destroy(hist);
 
@@ -90,7 +116,9 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     // 5) Remap each frame with the same palette
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
     QByteArray buffer(static_cast<int>(bufSize), 0);
-    for (liq_image* liqimg : liqImages) {
+    for (size_t i = 0; i < liqImages.size(); i++) {
+        liq_image* liqimg = liqImages[i];
+
         QImage outImg(w, h, QImage::Format_Indexed8);
         outImg.setColorTable(table);
 
@@ -109,6 +137,12 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         out.frames.push_back(std::move(qf));
 
         liq_image_destroy(liqimg);
+
+        // update progress for each frame
+        if (cbPtr) {
+            float pct = 40.0f + float(i + 1) / float(total) * 60.0f;
+            (*cbPtr)(pct);
+        }
     }
 
     // 6) Clean up quantization result & attributes

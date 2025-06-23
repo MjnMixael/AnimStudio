@@ -166,32 +166,59 @@ bool AnimationController::getAllKeyframesActive() const {
 }
 
 void AnimationController::quantize() {
-    m_data.quantizedFrames.clear();
+    // reset any previous quantized data
     m_data.quantizedFrames = m_data.frames;
-    auto result = Quantizer::quantize(m_data.quantizedFrames);
-    if (!result) {
-        emit errorOccurred("Quantize failed");
-        return;
+    m_data.quantized = false;
+
+    // 1) Launch async quantization with progress callback
+    auto future = QtConcurrent::run([this]() {
+        return Quantizer::quantize(
+            m_data.frames,
+            // ProgressFn: called with fraction [0.0–1.0]
+            [this](float fraction) {
+                // marshal back to GUI thread
+                QMetaObject::invokeMethod(
+                    this,
+                    "quantizationProgress",
+                    Qt::QueuedConnection,
+                    Q_ARG(int, int(fraction))
+                );
+                return true; // return false to abort early
+            }
+        );
+        });
+
+    // 2) Watch for completion
+    auto* watcher = new QFutureWatcher<std::optional<QuantResult>>(this);
+    connect(watcher, &QFutureWatcher<std::optional<QuantResult>>::finished, this, [=]() {
+        auto opt = watcher->result();
+        watcher->deleteLater();
+
+        if (!opt) {
+            emit errorOccurred("Color reduction failed");
+        } else {
+            // commit the quantized frames & switch into quantized mode
+            m_data.quantizedFrames = std::move(opt->frames);
+            m_data.quantized = true;
+            m_showQuantized = true;
+            emit metadataChanged(m_data);
+        }
+
+        // notify that we’ve finished (for status‐bar “complete!” etc.)
+        emit quantizationFinished();
+        });
+    watcher->setFuture(future);
+}
+
+void AnimationController::toggleShowQuantized(bool show) {
+    m_showQuantized = show;
+
+    // immediately redisplay the current frame under the new mode
+    const auto& frames = getCurrentFrames();
+    if (!frames.isEmpty() && m_currentIndex >= 0 && m_currentIndex < frames.size()) {
+        const AnimationFrame& f = frames[m_currentIndex];
+        emit frameReady(f.image, m_currentIndex);
     }
-    m_data.quantizedFrames = std::move(result->frames);
-    m_data.quantized = true;
-    m_showQuantized = true;
-}
-
-void AnimationController::undoQuantize() {
-    if (m_data.quantized) {
-        m_showQuantized = false;
-        m_data.quantizedFrames.clear();
-        m_data.quantized = false;
-    }
-}
-
-bool AnimationController::canUndoQuantize() const {
-    return m_data.quantized;
-}
-
-void AnimationController::toggleShowQuantized() {
-    m_showQuantized = !m_showQuantized;
 }
 
 bool AnimationController::isShowingQuantized() const {

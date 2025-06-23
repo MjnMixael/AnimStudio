@@ -39,9 +39,7 @@ public:
 
     // quantization
     void quantize();
-    void undoQuantize();
-    bool canUndoQuantize() const;
-    void toggleShowQuantized();
+    void toggleShowQuantized(bool show);
     bool isShowingQuantized() const;
 
     // metadata
@@ -62,6 +60,10 @@ signals:
     void playStateChanged(bool playing);
     // emitted whenever a new animation is loaded
     void animationLoaded();
+    // emitted with 0-100 as quantization proceeds
+    void quantizationProgress(int percent);
+    // emitted when the quantization is complete (success or failure)
+    void quantizationFinished();
 
 private slots:
     void advanceFrame();
