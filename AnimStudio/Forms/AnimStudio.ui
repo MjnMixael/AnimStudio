@@ -53,8 +53,8 @@
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>780</width>
-                <height>342</height>
+                <width>764</width>
+                <height>314</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -276,9 +276,40 @@
    <addaction name="menuExport"/>
    <addaction name="menuAbout"/>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
+  <widget class="QStatusBar" name="statusBar"/>
+  <widget class="QToolBar" name="toolBar">
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="sizePolicy">
+    <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+     <horstretch>0</horstretch>
+     <verstretch>0</verstretch>
+    </sizepolicy>
+   </property>
+   <property name="sizeIncrement">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="baseSize">
+    <size>
+     <width>0</width>
+     <height>0</height>
+    </size>
+   </property>
+   <property name="windowTitle">
+    <string>toolBar</string>
+   </property>
    <property name="movable">
     <bool>false</bool>
+   </property>
+   <property name="iconSize">
+    <size>
+     <width>24</width>
+     <height>24</height>
+    </size>
    </property>
    <property name="floatable">
     <bool>false</bool>
@@ -289,8 +320,8 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="actionOpenImageSequence"/>
   </widget>
-  <widget class="QStatusBar" name="statusBar"/>
   <action name="actionOpenImageSequence">
    <property name="text">
     <string>Open Image Sequence</string>
