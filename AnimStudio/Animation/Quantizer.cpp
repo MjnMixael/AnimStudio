@@ -47,8 +47,8 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
     // 2) Add each frame to histogram
     const size_t total = src.size();
-    for (size_t i = 0; i < total; ++i) {
-        const auto& frame = src[size_t(i)];
+    for (int i = 0; i < total; ++i) {
+        const auto& frame = src[i];
         QImage img = frame.image;
         if (img.format() != QImage::Format_RGBA8888) {
             img = img.convertToFormat(QImage::Format_RGBA8888);
@@ -116,7 +116,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     // 5) Remap each frame with the same palette
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
     QByteArray buffer(static_cast<int>(bufSize), 0);
-    for (size_t i = 0; i < liqImages.size(); i++) {
+    for (int i = 0; i < liqImages.size(); i++) {
         liq_image* liqimg = liqImages[i];
 
         QImage outImg(w, h, QImage::Format_Indexed8);

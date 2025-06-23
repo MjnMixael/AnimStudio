@@ -13,6 +13,71 @@
   <property name="windowTitle">
    <string>Mjn's AnimStudio</string>
   </property>
+  <property name="styleSheet">
+   <string notr="true">QMainWindow, QWidget {
+  background-color: #2E2E2E;  /* your “almost black” */
+  color:            #FFFFFF;  /* ensure text is readable */
+}
+
+/* make each top-level menu label transparent by default */
+QMenuBar::item {
+  background-color: transparent;
+}
+
+/* on hover/selection, use a very subtle lighter gray */
+QMenuBar::item:selected {
+  background-color: #3A3A3A;       /* just a smidge lighter */
+}
+
+/* optional: pressed state slightly brighter still */
+QMenuBar::item:pressed {
+  background-color: #4A4A4A;
+}
+
+/* Toolbar: match the same bg + no top border */
+QToolBar {
+  background-color: #2E2E2E;
+  border-top:       none;          /* nuke that line too */
+}
+
+/* toolbar separators – a slightly lighter grey */
+QToolBar::separator {
+  background-color: #3A3A3A;   /* light-grey line */
+  width:            1px;       /* if your toolbar is horizontal */
+  margin:           0px 12px;   /* tweak spacing left/right */
+}
+
+/* ── Default raised-button style for all QPushButtons ── */
+QPushButton {
+  background: qlineargradient(
+    x1:0, y1:0, x2:0, y2:1,
+    stop:0 #4A4A4A,
+    stop:1 #2E2E2E
+  );
+  border:        1px solid #6A6A6A;
+  border-radius: 4px;
+  padding:       6px 12px;
+  color:         #FFFFFF;
+}
+
+/* hover state */
+QPushButton:hover {
+  background: qlineargradient(
+    x1:0, y1:0, x2:0, y2:1,
+    stop:0 #5A5A5A,
+    stop:1 #3A3A3A
+  );
+}
+
+/* pressed state */
+QPushButton:pressed {
+  background: qlineargradient(
+    x1:0, y1:0, x2:0, y2:1,
+    stop:0 #333333,
+    stop:1 #1E1E1E
+  );
+}</string>
+  </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout_2">
     <item>
@@ -54,7 +119,7 @@
                 <x>0</x>
                 <y>0</y>
                 <width>764</width>
-                <height>397</height>
+                <height>391</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -180,21 +245,21 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="0">
+         <item row="5" column="0">
           <widget class="QLabel" name="resolutionLabel">
            <property name="text">
             <string>Resolution:</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
+         <item row="6" column="0">
           <widget class="QLabel" name="loopFrameLabel">
            <property name="text">
             <string>Loop Frame:</string>
            </property>
           </widget>
          </item>
-         <item row="5" column="1">
+         <item row="6" column="1">
           <widget class="QSpinBox" name="loopFrameSpinBox"/>
          </item>
          <item row="3" column="1">
@@ -211,24 +276,38 @@
            </property>
           </widget>
          </item>
-         <item row="4" column="1">
+         <item row="5" column="1">
           <widget class="QLabel" name="resolutionView">
            <property name="text">
             <string/>
            </property>
           </widget>
          </item>
-         <item row="6" column="0">
+         <item row="7" column="0">
           <widget class="QLabel" name="keyframeAllLabel">
            <property name="text">
             <string>Keyframe All: </string>
            </property>
           </widget>
          </item>
-         <item row="6" column="1">
+         <item row="7" column="1">
           <widget class="QCheckBox" name="keyframeAllCheckBox">
            <property name="tristate">
             <bool>false</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0">
+          <widget class="QLabel" name="lengthLabel">
+           <property name="text">
+            <string>Length:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1">
+          <widget class="QLabel" name="lengthView">
+           <property name="text">
+            <string/>
            </property>
           </widget>
          </item>
@@ -306,6 +385,7 @@
    <attribute name="toolBarBreak">
     <bool>false</bool>
    </attribute>
+   <addaction name="separator"/>
    <addaction name="actionOpenImageSequence"/>
    <addaction name="actionImport_Animation"/>
    <addaction name="separator"/>

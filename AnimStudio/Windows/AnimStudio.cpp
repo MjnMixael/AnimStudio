@@ -344,6 +344,8 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
 
         ui.fpsSpinBox->setValue(data.fps);
 
+        ui.lengthView->setText(QString("%1:%2").arg(data.totalLength / 60).arg(data.totalLength %60, 2, 10, QChar('0')));
+
         ui.framesView->setText(QString::number(data.frameCount));
         ui.resolutionView->setText(QString("%1 x %2")
             .arg(data.originalSize.width())
@@ -358,6 +360,7 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
         ui.typeView->clear();
         ui.fpsSpinBox->setValue(0);
         ui.framesView->clear();
+        ui.lengthView->clear();
         ui.resolutionView->clear();
         ui.loopFrameSpinBox->setValue(0);
         ui.keyframeAllCheckBox->setChecked(false);

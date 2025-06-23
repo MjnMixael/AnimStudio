@@ -67,6 +67,7 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
     if (!m_data.keyframeIndices.empty()) {
         m_data.loopPoint = m_data.keyframeIndices[0];
     }
+    m_data.totalLength = m_data.frameCount / m_data.fps;
     m_loaded = true;
     emit animationLoaded();
     emit metadataChanged(m_data);
