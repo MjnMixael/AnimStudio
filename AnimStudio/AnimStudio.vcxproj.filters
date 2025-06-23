@@ -5,10 +5,6 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>qml;cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>qrc;rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
     <Filter Include="Translation Files">
       <UniqueIdentifier>{639EADAA-A684-42e4-A9AD-28FC9BCB8F7C}</UniqueIdentifier>
       <Extensions>ts</Extensions>
@@ -46,11 +42,10 @@
     <Filter Include="Source Files\Dependencies\apngdisassembler">
       <UniqueIdentifier>{aec6ca12-b6fc-45c0-a670-46d69e1f52df}</UniqueIdentifier>
     </Filter>
-  </ItemGroup>
-  <ItemGroup>
-    <QtRcc Include="AnimStudio.qrc">
-      <Filter>Resource Files</Filter>
-    </QtRcc>
+    <Filter Include="Resources">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>qrc;rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -317,5 +312,10 @@
     <QtUic Include="Forms\AnimStudio.ui">
       <Filter>Forms</Filter>
     </QtUic>
+  </ItemGroup>
+  <ItemGroup>
+    <QtRcc Include="Forms\AnimStudio.qrc">
+      <Filter>Forms</Filter>
+    </QtRcc>
   </ItemGroup>
 </Project>

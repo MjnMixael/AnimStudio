@@ -21,6 +21,9 @@ public:
     void loadEffFile(const QString& path);
     void loadApngFile(const QString& path);
 
+    // status
+    bool isLoaded() const { return m_loaded; }
+
     // playback control
     void play();
     void pause();
@@ -30,8 +33,9 @@ public:
 
     // keyframes / looping
     void setLoopPoint(int frame);
-    void setAllKeyframes(bool all);
-    bool getAllKeyframes() const;
+    int getLoopPoint() const;
+    void setAllKeyframesActive(bool all);
+    bool getAllKeyframesActive() const;
 
     // quantization
     void quantize();
@@ -56,6 +60,8 @@ signals:
     void errorOccurred(const QString& message);
     // emitted whenever the play state changes
     void playStateChanged(bool playing);
+    // emitted whenever a new animation is loaded
+    void animationLoaded();
 
 private slots:
     void advanceFrame();
@@ -70,4 +76,5 @@ private:
     QTimer                m_timer;
     int                   m_currentIndex = 0;
     bool                  m_showQuantized = false;
+    bool                  m_loaded = false;
 };

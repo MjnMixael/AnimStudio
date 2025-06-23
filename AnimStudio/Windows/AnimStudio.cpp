@@ -28,8 +28,6 @@ AnimStudio::AnimStudio(QWidget* parent)
     // 1) construct your controller
     animCtrl = new AnimationController(this);
 
-    setupMetadataDock();
-
     // 2) Controller -> UI
     connect(animCtrl, &AnimationController::frameReady,
         this, [&](const QImage& img, int idx) {
@@ -47,8 +45,13 @@ AnimStudio::AnimStudio(QWidget* parent)
 
             // update UI for new data:
             updateMetadata(d);
-            ui.timelineSlider->setMaximum(d.frameCount - 1);
-            ui.timelineSlider->setValue(0);
+
+            // only update the slider's maximum if it actually changed
+            int newMax = d.frameCount - 1;
+            if (ui.timelineSlider->maximum() != newMax) {
+                ui.timelineSlider->setMaximum(newMax);
+                ui.timelineSlider->setValue(0);
+            }
         });
 
     connect(animCtrl, &AnimationController::errorOccurred,
@@ -62,9 +65,12 @@ AnimStudio::AnimStudio(QWidget* parent)
             ui.playPauseButton->setText(playing ? "Pause" : "Play");
         });
 
-    // No scrollbars in the animation preview area
-    ui.scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    ui.scrollArea->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    connect(animCtrl, &AnimationController::animationLoaded,
+        this, [&]() {
+            adjustPreviewSize();
+        });
+
+    updateMetadata(std::nullopt);
 }
 
 AnimStudio::~AnimStudio()
@@ -98,8 +104,8 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
 
     // hide the old preview and show spinner while loading
     ui.previewLabel->hide();
-    resetControls();
-    createSpinner(ui.scrollArea);
+    resetInterface();
+    createSpinner(ui.playerScrollArea);
 
     animCtrl->loadRawSequence(dir);
 }
@@ -117,16 +123,24 @@ void AnimStudio::on_fpsSpinBox_valueChanged(int value) {
     animCtrl->setFps(value); // FPS to ms
 }
 
+void AnimStudio::on_loopFrameSpinBox_valueChanged(int value) {
+    animCtrl->setLoopPoint(value);
+}
+
+void AnimStudio::on_nameEdit_editingFinished() {
+    animCtrl->setBaseName(ui.nameEdit->text());
+}
+
+void AnimStudio::on_keyframeAllCheckBox_toggled(bool all) {
+    animCtrl->setAllKeyframesActive(all);
+}
+
 void AnimStudio::on_timelineSlider_valueChanged(int value) {
     // Jump the controller to the requested frame
     animCtrl->seekFrame(value);
 }
 
-void AnimStudio::resetControls(){
-    // Stop playback
-    animCtrl->pause();
-    ui.playPauseButton->setText("Play");
-
+void AnimStudio::resetInterface(){
     // Reset timeline slider
     ui.timelineSlider->setValue(0);
     ui.timelineSlider->setMaximum(0);
@@ -146,7 +160,7 @@ void AnimStudio::resetControls(){
 
 void AnimStudio::on_actionClose_Image_Sequence_triggered()
 {
-    resetControls();
+    resetInterface();
     animCtrl->clear();
     updateMetadata(std::nullopt);
 }
@@ -169,8 +183,8 @@ void AnimStudio::on_actionImport_Animation_triggered()
 
     // show spinner while loading
     ui.previewLabel->hide();
-    resetControls();
-    createSpinner(ui.scrollArea);
+    resetInterface();
+    createSpinner(ui.playerScrollArea);
 
     // dispatch to controller
     QString ext = QFileInfo(filePath).suffix().toLower();
@@ -191,92 +205,34 @@ void AnimStudio::resizeEvent(QResizeEvent* event)
 {
     QMainWindow::resizeEvent(event);
 
-    QSize resolution = animCtrl->getResolution();
+    adjustPreviewSize();
+}
 
+void AnimStudio::adjustPreviewSize() {
+    QSize resolution = animCtrl->getResolution();
     if (resolution.isEmpty()) return;
 
-    // Get the current size of the scroll area viewport
-    QSize available = ui.scrollArea->viewport()->size();
-
-    // Calculate scaled size that fits while preserving aspect ratio
+    QSize available = ui.playerScrollArea->viewport()->size();
     QSize scaled = resolution;
     scaled.scale(available, Qt::KeepAspectRatio);
-
-    // Apply new size to preview label
     ui.previewLabel->setFixedSize(scaled);
 }
 
-void AnimStudio::setupMetadataDock() {
-    metadataDock = new QDockWidget(tr("Metadata"), this);
-    QWidget* container = new QWidget(metadataDock);
-    QFormLayout* form = new QFormLayout(container);
-
-    nameEdit = new QLineEdit;
-    nameEdit->setPlaceholderText("");
-    form->addRow(tr("Name:"), nameEdit);
-    nameEdit->setEnabled(false);
-
-    typeLabel = new QLabel; form->addRow(tr("Type:"), typeLabel);
-    
-    fpsSpin = new QSpinBox;
-    fpsSpin->setRange(1, 240);
-    fpsSpin->setEnabled(false);
-    form->addRow(tr("FPS:"), fpsSpin);
-
-    framesLabel = new QLabel; form->addRow(tr("Frames:"), framesLabel);
-    resolutionLabel = new QLabel; form->addRow(tr("Resolution:"), resolutionLabel);
-    
-    // Loop-back spin:
-    loopPointSpin = new QSpinBox;
-    loopPointSpin->setRange(0, 0);            // will be set when data loads
-    loopPointSpin->setEnabled(false);
-    form->addRow(tr("Loop-back frame:"), loopPointSpin);
-    connect(loopPointSpin, QOverload<int>::of(&QSpinBox::valueChanged),
-        this, &AnimStudio::onLoopPointChanged);
-
-    // “All frames are keyframes”:
-    allKeyframesCheck = new QCheckBox(tr("All frames keyframes"));
-    allKeyframesCheck->setEnabled(false);
-    form->addRow(QString(), allKeyframesCheck);
-    connect(allKeyframesCheck, &QCheckBox::toggled,
-        this, &AnimStudio::onAllKeyframesToggled);
-
-    // Quantization buttons:
-    quantizeBtn = new QPushButton(tr("Quantize"));
-    undoQuantBtn = new QPushButton(tr("Undo"));
-    QHBoxLayout* hlay = new QHBoxLayout;
-    hlay->addWidget(quantizeBtn);
-    hlay->addWidget(undoQuantBtn);
-    form->addRow(QString(), hlay);
-
-    connect(nameEdit, &QLineEdit::editingFinished, this, &AnimStudio::onNameEditFinished);
-    connect(fpsSpin, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimStudio::onMetadataFpsChanged);
-
-    // Connect quantization buttons
-    connect(quantizeBtn, &QPushButton::clicked, this, &AnimStudio::onQuantizeClicked);
-    connect(undoQuantBtn, &QPushButton::clicked, this, &AnimStudio::onUndoQuantize);
-
-    container->setLayout(form);
-    metadataDock->setWidget(container);
-    addDockWidget(Qt::RightDockWidgetArea, metadataDock);
-    metadataDock->setTitleBarWidget(new QWidget(metadataDock));
-    metadataDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
-    metadataDock->show();
-}
-
 void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
-    const bool hasData = anim.has_value();
-    nameEdit->setEnabled(hasData);
-    fpsSpin->setEnabled(hasData);
-    loopPointSpin->setEnabled(!animCtrl->getAllKeyframes());
-    allKeyframesCheck->setEnabled(hasData);
-    quantizeBtn->setEnabled(hasData);
-    undoQuantBtn->setEnabled(hasData && animCtrl->canUndoQuantize());
+    const bool hasData = animCtrl->isLoaded() && anim.has_value();
+    ui.nameEdit->setEnabled(hasData);
+    ui.fpsSpinBox->setEnabled(hasData);
+    ui.loopFrameSpinBox->setEnabled(!animCtrl->getAllKeyframesActive());
+    ui.keyframeAllCheckBox->setEnabled(hasData);
+    ui.playPauseButton->setEnabled(hasData);
+    ui.timelineSlider->setEnabled(hasData);
+    //quantizeBtn->setEnabled(hasData);
+    //undoQuantBtn->setEnabled(hasData && animCtrl->canUndoQuantize());
 
     if (hasData) {
         auto data = anim.value();
 
-        nameEdit->setText(data.baseName);
+        ui.nameEdit->setText(data.baseName);
 
         QString typeLabelText;
         switch (data.animationType) {
@@ -296,68 +252,36 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
                 typeLabelText = "";
         }
 
-        typeLabel->setText(typeLabelText);
+        ui.typeView->setText(typeLabelText);
 
-        fpsSpin->setValue(data.fps);
+        ui.fpsSpinBox->setValue(data.fps);
 
-        framesLabel->setText(QString::number(data.frameCount));
-        resolutionLabel->setText(QString("%1 x %2")
+        ui.framesView->setText(QString::number(data.frameCount));
+        ui.resolutionView->setText(QString("%1 x %2")
             .arg(data.originalSize.width())
             .arg(data.originalSize.height()));
-        // comma-list of keyframes
-        QStringList keys;
-        for (int i : data.keyframeIndices) keys << QString::number(i);
-        loopPointSpin->setRange(0, data.frameCount - 1);
 
-        bool all = (int)data.keyframeIndices.size() == data.frameCount;
-        allKeyframesCheck->setChecked(all);
-
-        if (all) {
-            // when “All” is on, spin tells nothing
-        } else if (data.keyframeIndices.empty()) {
-            loopPointSpin->setValue(0);
-        } else {
-            // pick the first (there should only ever be one)
-            loopPointSpin->setValue(data.keyframeIndices[0]);
-        }
+        ui.loopFrameSpinBox->setRange(0, data.frameCount - 1);
+        ui.loopFrameSpinBox->setValue(data.loopPoint);
+        int keyframeCount = data.keyframeIndices.size();
+        ui.keyframeAllCheckBox->setChecked((int)data.keyframeIndices.size() == data.frameCount);
     } else {
-        nameEdit->clear();
-        typeLabel->clear();
-        fpsSpin->setValue(0);
-        framesLabel->clear();
-        resolutionLabel->clear();
-        loopPointSpin->setValue(0);
-        allKeyframesCheck->setChecked(false);
+        ui.nameEdit->clear();
+        ui.typeView->clear();
+        ui.fpsSpinBox->setValue(0);
+        ui.framesView->clear();
+        ui.resolutionView->clear();
+        ui.loopFrameSpinBox->setValue(0);
+        ui.keyframeAllCheckBox->setChecked(false);
     }
-}
-
-void AnimStudio::onNameEditFinished() {
-    animCtrl->setBaseName(nameEdit->text());
-}
-
-void AnimStudio::onMetadataFpsChanged(int fps)
-{
-    animCtrl->setFps(fps);
-}
-
-void AnimStudio::onLoopPointChanged(int frame) {
-    if (allKeyframesCheck->isChecked())
-        return;
-
-    // single keyframe mode:
-    animCtrl->setLoopPoint(frame);
-}
-
-void AnimStudio::onAllKeyframesToggled(bool all) {
-    animCtrl->setAllKeyframes(all);
 }
 
 void AnimStudio::onQuantizeClicked() {
     animCtrl->quantize();
 
     // 4) update button states
-    undoQuantBtn->setEnabled(true);
-    quantizeBtn->setEnabled(false);
+    //undoQuantBtn->setEnabled(true);
+    //quantizeBtn->setEnabled(false);
 }
 
 void AnimStudio::onUndoQuantize() {
@@ -367,6 +291,6 @@ void AnimStudio::onUndoQuantize() {
     animCtrl->undoQuantize();
 
     // reset button states
-    undoQuantBtn->setEnabled(false);
-    quantizeBtn->setEnabled(true);
+    //undoQuantBtn->setEnabled(false);
+    //quantizeBtn->setEnabled(true);
 }

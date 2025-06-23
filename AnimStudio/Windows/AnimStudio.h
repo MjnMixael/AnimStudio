@@ -39,42 +39,27 @@ private slots:
 
     void on_playPauseButton_clicked();
     void on_timelineSlider_valueChanged(int value);
+    void on_fpsSpinBox_valueChanged(int value);
+    void on_loopFrameSpinBox_valueChanged(int value);
+    void on_nameEdit_editingFinished();
+    void on_keyframeAllCheckBox_toggled(bool checked);
 
 private:
     Ui::AnimStudioClass ui;
     AnimationController* animCtrl = nullptr;
-
     SpinnerWidget* spinner = nullptr;
 
-    // new metadata dock & widgets
-    QDockWidget* metadataDock = nullptr;
-    QLineEdit* nameEdit = nullptr;
-    QLabel* typeLabel = nullptr;
-    QSpinBox* fpsSpin = nullptr;
-    QLabel* framesLabel = nullptr;
-    QLabel* resolutionLabel = nullptr;
-    QSpinBox* loopPointSpin = nullptr;
-    QCheckBox* allKeyframesCheck = nullptr;
-
-    QPushButton* quantizeBtn = nullptr;
-    QPushButton* undoQuantBtn = nullptr;
-
-    void setupMetadataDock();
     void updateMetadata(std::optional<AnimationData> data);
-    void onNameEditFinished();
-    void onMetadataFpsChanged(int fps);
-    void onLoopPointChanged(int frame);
-    void onAllKeyframesToggled(bool all);
+
+    // Move these eventually
     void onQuantizeClicked();
-    void onUndoQuantize();
+    void onUndoQuantize();    
 
-    // Unused?
-    void on_fpsSpinBox_valueChanged(int value);
-    
-
-    void resetControls();
+    void resetInterface();
 
     void createSpinner(QWidget* parent);
     void deleteSpinner();
+
+    void adjustPreviewSize();
 };
 

@@ -159,7 +159,7 @@
     <ClCompile Include="Formats\Import\RawImporter.cpp" />
     <ClCompile Include="Animation\Quantizer.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
-    <QtRcc Include="AnimStudio.qrc" />
+    <QtRcc Include="Forms\AnimStudio.qrc" />
     <QtUic Include="Forms\AnimStudio.ui" />
     <QtMoc Include="Windows\AnimStudio.h" />
     <ClCompile Include="Windows\AnimStudio.cpp" />

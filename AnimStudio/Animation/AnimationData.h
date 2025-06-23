@@ -27,6 +27,7 @@ struct AnimationData {
     int frameCount = 0;
     int fps = 15;
     QVector<int> keyframeIndices;
+    int loopPoint = 0; // frame index to loop back to
 
     QVector<AnimationFrame> frames;
     QVector<AnimationFrame> quantizedFrames;

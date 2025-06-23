@@ -64,6 +64,11 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
     }
     m_data = *data;
     m_data.originalSize = m_data.frames.isEmpty() ? QSize() : m_data.frames[0].image.size();
+    if (!m_data.keyframeIndices.empty()) {
+        m_data.loopPoint = m_data.keyframeIndices[0];
+    }
+    m_loaded = true;
+    emit animationLoaded();
     emit metadataChanged(m_data);
     // immediately show first frame
     if (!m_data.frames.isEmpty()) {
@@ -135,21 +140,28 @@ bool AnimationController::isPlaying() const {
 
 void AnimationController::setLoopPoint(int frame) {
     if (frame >= 0 && frame < m_data.frameCount) {
-        m_data.keyframeIndices = { frame };
+        m_data.keyframeIndices = { frame }; // Update the vector for the exporter
+        m_data.loopPoint = frame; // Store this specific int for easy access
         emit metadataChanged(m_data);
     }
 }
 
-void AnimationController::setAllKeyframes(bool all) {
+int AnimationController::getLoopPoint() const {
+    return m_data.loopPoint;
+}
+
+void AnimationController::setAllKeyframesActive(bool all) {
     m_data.keyframeIndices.clear();
     if (all) {
         m_data.keyframeIndices.resize(m_data.frameCount);
         std::iota(m_data.keyframeIndices.begin(), m_data.keyframeIndices.end(), 0);
+    } else {
+        m_data.keyframeIndices.push_back(m_data.loopPoint);
     }
     emit metadataChanged(m_data);
 }
 
-bool AnimationController::getAllKeyframes() const {
+bool AnimationController::getAllKeyframesActive() const {
     return m_data.keyframeIndices.size() == m_data.frames.size();
 }
 
@@ -197,6 +209,7 @@ QSize AnimationController::getResolution() const {
 
 void AnimationController::clear() {
     pause();
+    m_loaded = false;
     m_data = AnimationData{};
     emit metadataChanged(m_data);
 }
