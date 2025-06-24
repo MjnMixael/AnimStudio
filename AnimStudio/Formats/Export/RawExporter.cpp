@@ -3,31 +3,11 @@
 #include <QDir>
 #include <QImageWriter>
 
-QByteArray RawExporter::formatToQtString(Format fmt) {
-    switch (fmt) {
-    case Format::Png:  return "PNG";
-    case Format::Jpg:  return "JPG";
-    case Format::Tga:  return "TGA";
-    case Format::Pcx:  return "PCX";  // Requires external plugin if Qt doesn't support PCX out of the box
-    }
-    return "PNG";
-}
-
-QString RawExporter::extensionForFormat(Format fmt) {
-    switch (fmt) {
-    case Format::Png:  return ".png";
-    case Format::Jpg:  return ".jpg";
-    case Format::Tga:  return ".tga";
-    case Format::Pcx:  return ".pcx";
-    }
-    return ".png";
-}
-
 bool RawExporter::exportCurrentFrame(
     const AnimationData& data,
     int frameIndex,
     const QString& outputPath,
-    Format format)
+    ImageFormat format)
 {
     if (frameIndex < 0 || frameIndex >= data.frames.size())
         return false;
@@ -42,7 +22,7 @@ bool RawExporter::exportCurrentFrame(
 bool RawExporter::exportAllFrames(
     const AnimationData& data,
     const QString& outputDir,
-    Format format)
+    ImageFormat format)
 {
     QDir dir(outputDir);
     if (!dir.exists()) {

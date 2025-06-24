@@ -1,10 +1,14 @@
 // AnimationData.h
 #pragma once
 
+#include "Formats/ImageFormats.h"
+
 #include <QString>
 #include <QImage>
 #include <QVector>
 #include <QSize>
+
+#include <optional>
 
 enum class AnimationType {
     Eff,
@@ -21,7 +25,7 @@ struct AnimationFrame {
 
 struct AnimationData {
     QString baseName;
-    QString type; // DDS, PNG, etc.
+    std::optional<ImageFormat> type;
     AnimationType animationType = AnimationType::Raw;
     QSize originalSize; // size of the original frames
     int frameCount = 0;

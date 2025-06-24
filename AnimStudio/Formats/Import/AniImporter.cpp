@@ -72,7 +72,7 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     AnimationData out;
     QFileInfo fi(aniPath);
     out.baseName = fi.completeBaseName();
-    out.type = "";
+    out.type = std::nullopt;
     out.frameCount = int(nframes);
     out.fps = int(fps);
     for (quint16 k : keys) {

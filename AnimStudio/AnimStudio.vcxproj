@@ -158,6 +158,7 @@
     <ClCompile Include="Formats\Export\ApngExporter.cpp" />
     <ClCompile Include="Formats\Export\EffExporter.cpp" />
     <ClCompile Include="Formats\Export\RawExporter.cpp" />
+    <ClCompile Include="Formats\ImageFormats.cpp" />
     <ClCompile Include="Formats\Import\AniImporter.cpp" />
     <ClCompile Include="Formats\Import\ApngImporter.cpp" />
     <ClCompile Include="Formats\Import\EffImporter.cpp" />
@@ -213,6 +214,7 @@
     <ClInclude Include="Formats\Export\ApngExporter.h" />
     <ClInclude Include="Formats\Export\EffExporter.h" />
     <ClInclude Include="Formats\Export\RawExporter.h" />
+    <ClInclude Include="Formats\ImageFormats.h" />
     <ClInclude Include="Formats\Import\AniImporter.h" />
     <ClInclude Include="Formats\Import\ApngImporter.h" />
     <ClInclude Include="Formats\Import\EffImporter.h" />

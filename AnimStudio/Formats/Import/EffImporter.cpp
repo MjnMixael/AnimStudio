@@ -1,6 +1,7 @@
 // EffImporter.cpp
 #include "EffImporter.h"
 #include "Animation/AnimationData.h"
+#include "Formats/ImageFormats.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
@@ -17,10 +18,12 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
     AnimationData data;
     data.baseName = QFileInfo(effPath).completeBaseName();
 
+    QString type;
+
     while (!in.atEnd()) {
         const QString line = in.readLine().trimmed();
         if (line.startsWith("$Type:", Qt::CaseInsensitive))
-            data.type = line.section(':', 1).trimmed();
+            type = line.section(':', 1).trimmed();
         else if (line.startsWith("$Frames:", Qt::CaseInsensitive))
             data.frameCount = line.section(':', 1).trimmed().toInt();
         else if (line.startsWith("$FPS:", Qt::CaseInsensitive))
@@ -29,8 +32,14 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
             data.keyframeIndices.append(line.section(':', 1).trimmed().toInt());
     }
 
+    if (!isSupportedFormat(type)) {
+        return std::nullopt; // unsupported type
+    } else {
+        data.type = formatFromExtension(type);
+    }
+
     QDir dir = QFileInfo(effPath).absoluteDir();
-    QString suffix = "." + data.type.toLower();
+    QString suffix = extensionForFormat(data.type.value());
 
     for (int i = 0; i < data.frameCount; ++i) {
         QString frameName = QString("%1_%2%3").arg(data.baseName).arg(i, 4, 10, QChar('0')).arg(suffix);

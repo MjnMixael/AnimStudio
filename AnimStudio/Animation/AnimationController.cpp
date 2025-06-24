@@ -51,16 +51,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
 void AnimationController::exportAllFrames(const QString& dir, const QString& ext) {
     if (!m_loaded) return;
     // map string to enum
-    RawExporter::Format fmt = RawExporter::Format::Png;  // default
-    if (ext == "png") {
-        fmt = RawExporter::Format::Png;
-    } else if (ext == "jpg" || ext == "jpeg") {
-        fmt = RawExporter::Format::Jpg;
-    } else if (ext == "tga") {
-        fmt = RawExporter::Format::Tga;
-    } else if (ext == "pcx") {
-        fmt = RawExporter::Format::Pcx;
-    }
+    ImageFormat fmt = formatFromExtension(ext);
 
     bool ok = RawExporter::exportAllFrames(
         m_data,            // your loaded AnimationData
@@ -81,16 +72,7 @@ void AnimationController::exportCurrentFrame(const QString& path, const QString&
     const AnimationFrame& frame = getCurrentFrames()[m_currentIndex];
     
     // map string to enum
-    RawExporter::Format fmt = RawExporter::Format::Png;  // default
-    if (ext == "png") {
-        fmt = RawExporter::Format::Png;
-    } else if (ext == "jpg" || ext == "jpeg") {
-        fmt = RawExporter::Format::Jpg;
-    } else if (ext == "tga") {
-        fmt = RawExporter::Format::Tga;
-    } else if (ext == "pcx") {
-        fmt = RawExporter::Format::Pcx;
-    }
+    ImageFormat fmt = formatFromExtension(ext);
 
     // call into RawExporter
     bool ok = RawExporter::exportCurrentFrame(

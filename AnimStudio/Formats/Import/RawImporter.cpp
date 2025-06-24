@@ -1,5 +1,6 @@
 #include "RawImporter.h"
 #include "Animation/AnimationData.h"
+#include "Formats/ImageFormats.h"
 #include <QDir>
 #include <QImageReader>
 #include <QRegularExpression>
@@ -7,7 +8,7 @@
 
 AnimationData RawImporter::importBlocking(const QString& dir) {
     AnimationData data;
-    QStringList filters = { "*.png", "*.bmp", "*.jpg", "*.tga" };
+    QStringList filters = availableFilters();
     QDir directory(dir);
     QStringList files = directory.entryList(filters, QDir::Files, QDir::Name);
 
@@ -24,11 +25,11 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
             QString()     // replace with empty
         );
         data.baseName = strippedBase; // e.g. "walk"
-        data.type = firstFi.suffix().toLower();       // e.g. "png"
+        data.type = formatFromExtension(firstFi.suffix());       // e.g. "png"
     } else {
         // No files: fall back to directory name
         data.baseName = QString();
-        data.type = QString();
+        data.type = std::nullopt;
     }
 
     data.frameCount = files.size();

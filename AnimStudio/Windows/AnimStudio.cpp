@@ -1,5 +1,6 @@
 #include "AnimStudio.h"
 #include "Animation/AnimationData.h"
+#include "Formats/ImageFormats.h"
 #include "ui_AnimStudio.h"
 #include "Animation/Quantizer.h"
 #include "Formats/Import/AniImporter.h"
@@ -262,7 +263,7 @@ void AnimStudio::on_actionImport_Animation_triggered()
         this,
         "Import Animation",
         QString(),
-        "Animation Files (*.ani *.eff *.png);;All Files (*.*)"
+        "Animation Files (*.ani *.eff *.png *.apng);;All Files (*.*)"
     );
     if (filePath.isEmpty())
         return;
@@ -323,7 +324,7 @@ void AnimStudio::on_actionExport_All_Frames_triggered()
         return;
 
     // Let the user pick the image format (png/jpg/etc)
-    QStringList formats = { "png", "jpg", "tga", "pcx" };
+    QStringList formats = availableExtensions();
     bool ok = false;
     QString ext = QInputDialog::getItem(
         this,
@@ -343,13 +344,16 @@ void AnimStudio::on_actionExport_All_Frames_triggered()
 
 void AnimStudio::on_actionExport_Current_Frame_triggered()
 {
-    // Include all supported types in the filter
-    QString filter =
-        "PNG Images (*.png);;"
-        "JPEG Images (*.jpg *.jpeg);;"
-        "TGA Images (*.tga);;"
-        "PCX Images (*.pcx);;"
-        "All Files (*.*)";
+    // Build a list of “PNG Images (*.png)” etc. from availableExtensions()
+    QStringList extList = availableExtensions();  // e.g. ["png","jpg","tga","pcx","dds"]
+    QStringList filterEntries;
+    for (const QString& e : extList) {
+        filterEntries << QString("%1 Images (*.%2)").arg(e.toUpper()).arg(e);
+    }
+    filterEntries << "All Files (*.*)";
+
+    // 2) Join them with the “;;” separator that Qt expects
+    QString filter = filterEntries.join(";;");
 
     int frameCount = animCtrl->getFrameCount();      // total frames
     int maxIndex = frameCount - 1;                // last index
@@ -461,7 +465,7 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
         QString typeLabelText;
         switch (data.animationType) {
             case AnimationType::Eff:
-                typeLabelText = "Eff: " + data.type;
+                typeLabelText = "Eff (" + extensionForFormat(data.type.value()) + ")";
                 break;
             case AnimationType::Ani:
                 typeLabelText = "Ani";
@@ -470,7 +474,7 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
                 typeLabelText = "Apng";
                 break;
             case AnimationType::Raw:
-                typeLabelText = "Sequence: " + data.type;
+                typeLabelText = "Sequence (" + extensionForFormat(data.type.value()) + ")";
                 break;
             default:
                 typeLabelText = "";

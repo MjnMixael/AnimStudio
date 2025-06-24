@@ -22,7 +22,7 @@ std::optional<AnimationData> ApngImporter::importFromFile(const QString& path) {
         AnimationData out;
         QFileInfo fi(path);
         out.baseName = fi.completeBaseName();
-        out.type = "";
+        out.type = std::nullopt;
         out.frameCount = int(frames.size());
         out.frames.reserve(out.frameCount);
         out.animationType = AnimationType::Apng;
