@@ -1,4 +1,5 @@
 ﻿#include "AnimationController.h"
+#include "BuiltInPalettes.h"
 #include <QtConcurrent>
 #include <QFutureWatcher>
 #include "Formats/Import/RawImporter.h"
@@ -59,7 +60,7 @@ void AnimationController::beginLoad(AnimationType type, const QString& path) {
 
 void AnimationController::finishLoad(const std::optional<AnimationData>& data, const QString& error) {
     if (!data) {
-        emit errorOccurred(error);
+        emit errorOccurred("Import Failed", error);
         return;
     }
     m_data = *data;
@@ -168,16 +169,30 @@ bool AnimationController::getAllKeyframesActive() const {
     return m_data.keyframeIndices.size() == m_data.frames.size();
 }
 
-void AnimationController::quantize() {
+void AnimationController::quantize(const QVector<QRgb>& testPalette) {
     // reset any previous quantized data
     m_data.quantizedFrames = m_data.frames;
     m_data.quantized = false;
 
+    // make a **local copy** of the frames so clear() can't stomp them
+    QVector<AnimationFrame> framesCopy = m_data.frames;
+
     // 1) Launch async quantization with progress callback
-    auto future = QtConcurrent::run([this]() {
-        return Quantizer::quantize(
-            m_data.frames,
-            // ProgressFn: called with fraction [0.0–1.0]
+    auto future = QtConcurrent::run([this, framesCopy, testPalette]() -> std::optional<QuantResult> {
+        m_quantizer.reset();
+
+        // Build and configure our Quantizer
+        if (!testPalette.isEmpty()) {
+            m_quantizer.setCustomPalette(testPalette);
+        }
+        // (Optionally you could chain other settings here:)
+        //    .setQualityRange(10,90)
+        //    .setDitheringLevel(0.5f)
+        //    .setMaxColors(128);
+
+        // Run the quantization
+        return m_quantizer.quantize(
+            framesCopy,
             [this](float fraction) {
                 // marshal back to GUI thread
                 QMetaObject::invokeMethod(
@@ -189,7 +204,7 @@ void AnimationController::quantize() {
                 return true; // return false to abort early
             }
         );
-        });
+    });
 
     // 2) Watch for completion
     auto* watcher = new QFutureWatcher<std::optional<QuantResult>>(this);
@@ -197,8 +212,16 @@ void AnimationController::quantize() {
         auto opt = watcher->result();
         watcher->deleteLater();
 
+        bool success = true;
         if (!opt) {
-            emit errorOccurred("Color reduction failed");
+            QString msg;
+            if (m_quantizer.isCancelRequested()) {
+                msg = "Color reduction task was cancelled by user.";
+            } else {
+                msg = "Color reduction task failed to complete successfully.";
+            }
+            success = false;
+            emit errorOccurred("Color Reduction Failed", msg);
         } else {
             // commit the quantized frames & switch into quantized mode
             m_data.quantizedFrames = std::move(opt->frames);
@@ -208,9 +231,18 @@ void AnimationController::quantize() {
         }
 
         // notify that we’ve finished (for status‐bar “complete!” etc.)
-        emit quantizationFinished();
+        emit quantizationFinished(success);
         });
     watcher->setFuture(future);
+}
+
+void AnimationController::cancelQuantization() {
+    m_quantizer.cancel();
+    // We don't have a way to cancel the current quantization in progress,
+    // but we can set the flag so that future calls to quantize() will abort.
+    m_data.quantized = false;
+    m_showQuantized = false;
+    emit metadataChanged(m_data);
 }
 
 void AnimationController::toggleShowQuantized(bool show) {
@@ -235,6 +267,14 @@ void AnimationController::setBaseName(const QString & name) {
 
 QSize AnimationController::getResolution() const {
     return m_data.originalSize;
+}
+
+int AnimationController::getFrameCount() const {
+    return m_data.frameCount;
+}
+
+int AnimationController::getFPS() const {
+    return m_data.fps;
 }
 
 void AnimationController::clear() {

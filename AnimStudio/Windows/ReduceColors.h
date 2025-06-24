@@ -2,6 +2,8 @@
 #pragma once
 
 #include <QDialog>
+#include <QVector>
+#include <QRgb>
 
 namespace Ui { class ReduceColorsDialog; }
 
@@ -12,6 +14,7 @@ class ReduceColorsDialog : public QDialog
 public:
     explicit ReduceColorsDialog(QWidget* parent = nullptr);
     ~ReduceColorsDialog();
+    QVector<QRgb> selectedPalette() const;
 
 signals:
     /// Emitted when the user confirms reduction.

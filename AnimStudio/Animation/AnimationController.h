@@ -38,15 +38,16 @@ public:
     bool getAllKeyframesActive() const;
 
     // quantization
-    void quantize();
+    void quantize(const QVector<QRgb>& testPalette);
+    void cancelQuantization();
     void toggleShowQuantized(bool show);
     bool isShowingQuantized() const;
 
     // metadata
     void setBaseName(const QString& name);
     QSize getResolution() const;
-    int getFrameCount() const { return m_data.frameCount; }
-    int getFPS() const { return m_data.fps; }
+    int getFrameCount() const;
+    int getFPS() const;
 
     // clean up
     void clear();
@@ -57,7 +58,7 @@ signals:
     // emitted when metadata (frameCount, fps, baseName, keyframes…) changes
     void metadataChanged(const AnimationData& data);
     // emitted if a load or import fails
-    void errorOccurred(const QString& message);
+    void errorOccurred(const QString& title, const QString& message);
     // emitted whenever the play state changes
     void playStateChanged(bool playing);
     // emitted whenever a new animation is loaded
@@ -65,7 +66,7 @@ signals:
     // emitted with 0-100 as quantization proceeds
     void quantizationProgress(int percent);
     // emitted when the quantization is complete (success or failure)
-    void quantizationFinished();
+    void quantizationFinished(bool success);
 
 private slots:
     void advanceFrame();
@@ -81,4 +82,6 @@ private:
     int                   m_currentIndex = 0;
     bool                  m_showQuantized = false;
     bool                  m_loaded = false;
+
+    Quantizer             m_quantizer;
 };

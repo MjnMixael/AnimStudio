@@ -10,95 +10,156 @@ static int liqProgressShim(float fraction, void* userInfo) {
     return (*fn)(fraction) ? 1 : 0;
 }
 
+Quantizer::Quantizer() = default;
+
+Quantizer& Quantizer::setQualityRange(int min, int max) {
+    qualityMin_ = min;
+    qualityMax_ = max;
+    return *this;
+}
+
+Quantizer& Quantizer::setDitheringLevel(float dither) {
+    ditheringLevel_ = dither;
+    return *this;
+}
+
+Quantizer& Quantizer::setMaxColors(int maxColors) {
+    maxColors_ = maxColors;
+    return *this;
+}
+
+Quantizer& Quantizer::setCustomPalette(const QVector<QRgb>& palette) {
+    customPalette_ = palette;
+    return *this;
+}
+
+void Quantizer::reset() {
+    cancelRequested_.store(false);
+    qualityMin_ = 0;
+    qualityMax_ = 100;
+    ditheringLevel_ = 0.8f;
+    maxColors_ = 256;
+    customPalette_.clear();
+}
+
+void Quantizer::cancel() {
+    cancelRequested_.store(true);
+}
+
 std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& src, ProgressFn progressCb) {
     if (src.isEmpty()) {
         qDebug() << "Quantize: no source frames provided";
         return std::nullopt;
     }
 
-    // 1) Initialize attributes and histogram for global palette
-    liq_attr* attr = liq_attr_create();
-    if (!attr) {
-        qDebug() << "Quantize: liq_attr_create failed";
-        return std::nullopt;
-    }
-    liq_set_last_index_transparent(attr, 1); // For FSO's ANI transparency index
-    liq_set_max_colors(attr, 256);
-    liq_set_quality(attr, 0, 100);
-
-    // If caller wants progress, register it on the attr
-    ProgressFn* cbPtr = nullptr;
-    if (progressCb) {
-        cbPtr = new ProgressFn(std::move(progressCb));
-    }
-
-    liq_histogram* hist = liq_histogram_create(attr);
-    if (!hist) {
-        qDebug() << "Quantize: liq_histogram_create failed";
-        liq_attr_destroy(attr);
-        return std::nullopt;
-    }
-
-    // Prepare to keep liq_image pointers for remapping
+    // Resource handles
+    liq_attr* attr = nullptr;
+    liq_histogram* hist = nullptr;
+    liq_result* resultPal = nullptr;
     QVector<liq_image*> liqImages;
     liqImages.reserve(src.size());
     int w = src[0].image.width();
     int h = src[0].image.height();
-
-    // 2) Add each frame to histogram
     const size_t total = src.size();
+
+    // If caller wants progress, register it on the attr
+    std::unique_ptr<ProgressFn> cbPtr = progressCb ? std::make_unique<ProgressFn>(std::move(progressCb)) : nullptr;
+
+    // Cleanup & early-return helper
+    auto quit = [&](const char* message) -> std::optional<QuantResult> {
+        qDebug() << message;
+        if (resultPal)    liq_result_destroy(resultPal);
+        for (auto* img : liqImages) liq_image_destroy(img);
+        if (hist)         liq_histogram_destroy(hist);
+        if (attr)         liq_attr_destroy(attr);
+        return std::nullopt;
+    };
+
+    bool usingCustomPalette = !customPalette_.isEmpty();
+
+    // Initialize attributes
+    attr = liq_attr_create();
+    if (!attr) return quit("Quantize: liq_attr_create failed");
+    liq_set_last_index_transparent(attr, 1); // For FSO's ANI transparency index
+    liq_set_quality(attr, qualityMin_, qualityMax_);
+    //TODO liq_image_set_background
+    //TODO liq_set_output_gamma
+
+    hist = liq_histogram_create(attr);
+    if (!hist) return quit("Quantize: liq_histogram_create failed");
+
+    // Create the histogram from palette if set
+    if (usingCustomPalette) {
+        liq_set_max_colors(attr, static_cast<int>(customPalette_.size()));
+
+        // Build an array of histogram entries from your palette
+        std::vector<liq_histogram_entry> entries;
+        entries.reserve(customPalette_.size());
+        for (QRgb qc : customPalette_) {
+            if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
+
+            liq_color col = {
+                static_cast<unsigned char>(qRed(qc)),
+                static_cast<unsigned char>(qGreen(qc)),
+                static_cast<unsigned char>(qBlue(qc)),
+                static_cast<unsigned char>(qAlpha(qc))
+            };
+            
+            entries.push_back({ col, 1u }); // count=1.0f
+
+            // Feed them into the histogram
+            if (LIQ_OK != liq_histogram_add_fixed_color(
+                hist,
+                col,
+                /*gamma=*/0.0
+            ))
+            {
+                qWarning() << "Quantize: liq_histogram_add_colors failed";
+            }
+        }
+
+        
+    } else {
+        liq_set_max_colors(attr, maxColors_); // Default max colors if no custom palette
+    }
+
+    // Process each frame to add to histogram for palette generation
     for (int i = 0; i < total; ++i) {
+        if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
+
         const auto& frame = src[i];
         QImage img = frame.image;
         if (img.format() != QImage::Format_RGBA8888) {
             img = img.convertToFormat(QImage::Format_RGBA8888);
         }
         if (img.width() != w || img.height() != h) {
-            qDebug() << "Quantize: frame sizes differ, cannot global-quantize";
-            // cleanup
-            for (liq_image* liqimg : liqImages) liq_image_destroy(liqimg);
-            liq_histogram_destroy(hist);
-            liq_attr_destroy(attr);
-            return std::nullopt;
+            return quit("Quantize: frame sizes differ, cannot global-quantize");
         }
-        // create and add
         liq_image* liqimg = liq_image_create_rgba(attr,
             img.bits(), w, h, 0.0f);
         if (!liqimg) {
-            qDebug() << "Quantize: liq_image_create_rgba failed";
-            for (liq_image* liqimg2 : liqImages) liq_image_destroy(liqimg2);
-            liq_histogram_destroy(hist);
-            liq_attr_destroy(attr);
-            return std::nullopt;
+            return quit("Quantize: liq_image_create_rgba failed");
         }
         liq_histogram_add_image(hist, attr, liqimg);
-        liqImages.push_back(liqimg);
+        liqImages.push_back(liqimg); // Still need these for remapping later
 
-        // Track progress adding each frame to the histogram. This is 30% of total.
+        // Track progress adding each frame to the histogram. 0% -> 20%
         if (cbPtr) {
-            float pct = float(i + 1) / float(total) * 30.0f;
+            float pct = 0.0f + float(i + 1) / float(total) * 20.0f;
             (*cbPtr)(pct);
         }
     }
 
     // 3) Generate global palette from histogram
-    liq_result* resultPal = nullptr;
-    liq_set_dithering_level(resultPal, static_cast<float>(0.8));
     if (LIQ_OK != liq_histogram_quantize(hist, attr, &resultPal) || !resultPal) {
-        qDebug() << "Quantize: liq_histogram_quantize failed";
-        for (liq_image* liqimg : liqImages) liq_image_destroy(liqimg);
-        liq_histogram_destroy(hist);
-        liq_attr_destroy(attr);
-        return std::nullopt;
-    }
-
-    // If we have a progress callback, notify that palette is done (jump to 40%)
-    if (cbPtr) {
-        (*cbPtr)(40.0f);
+        return quit("Quantize: liq_histogram_quantize failed");
     }
 
     // histogram no longer needed
     liq_histogram_destroy(hist);
+
+    // If the user requested cancellation, we can stop here
+    if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
 
     // 4) Prepare output structure
     QuantResult out;
@@ -106,9 +167,12 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
     // Extract palette for QImage
     const liq_palette* pal = liq_get_palette(resultPal);
+    liq_set_dithering_level(resultPal, ditheringLevel_);
     QVector<QRgb> table;
     table.reserve(pal->count);
-    for (int i = 0; i < static_cast<int>(pal->count); ++i) {
+    const int nColors = static_cast<int>(pal->count);
+    for (int i = 0; i < nColors; ++i) {
+        if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
         const liq_color& c = pal->entries[i];
         table.append(qRgba(c.r, c.g, c.b, c.a));
     }
@@ -117,6 +181,8 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
     QByteArray buffer(static_cast<int>(bufSize), 0);
     for (int i = 0; i < liqImages.size(); i++) {
+        if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
+
         liq_image* liqimg = liqImages[i];
 
         QImage outImg(w, h, QImage::Format_Indexed8);
@@ -138,9 +204,9 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
         liq_image_destroy(liqimg);
 
-        // update progress for each frame
+        // update progress for each frame 20% -> 100%
         if (cbPtr) {
-            float pct = 40.0f + float(i + 1) / float(total) * 60.0f;
+            float pct = 20.0f + float(i + 1) / float(total) * 80.0f;
             (*cbPtr)(pct);
         }
     }

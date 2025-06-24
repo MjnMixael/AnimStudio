@@ -195,6 +195,9 @@
     <ClCompile Include="Windows\ReduceColors.cpp">
       <Filter>Source Files\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Animation\Palette.cpp">
+      <Filter>Source Files\Animation</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -312,6 +315,12 @@
     </ClInclude>
     <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h">
       <Filter>Source Files\Dependencies\apngdisassembler</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\Palette.h">
+      <Filter>Source Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Animation\BuiltInPalettes.h">
+      <Filter>Source Files\Animation</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

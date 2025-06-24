@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Animation\AnimationController.cpp" />
+    <ClCompile Include="Animation\Palette.cpp" />
     <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp" />
     <ClCompile Include="Dependencies\libimagequant\blur.c" />
     <ClCompile Include="Dependencies\libimagequant\kmeans.c" />
@@ -174,6 +175,8 @@
     <QtMoc Include="Windows\ReduceColors.h" />
     <QtMoc Include="Animation\AnimationController.h" />
     <ClInclude Include="Animation\AnimationData.h" />
+    <ClInclude Include="Animation\BuiltInPalettes.h" />
+    <ClInclude Include="Animation\Palette.h" />
     <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h" />
     <ClInclude Include="Dependencies\libimagequant\blur.h" />
     <ClInclude Include="Dependencies\libimagequant\kmeans.h" />

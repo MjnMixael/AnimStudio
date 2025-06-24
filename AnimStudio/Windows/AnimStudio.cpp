@@ -64,9 +64,9 @@ AnimStudio::AnimStudio(QWidget* parent)
         });
 
     connect(animCtrl, &AnimationController::errorOccurred,
-        this, [&](const QString& msg) {
+        this, [&](const QString& title, const QString& msg) {
             deleteSpinner();
-            QMessageBox::critical(this, "Import Failed", msg);
+            QMessageBox::critical(this, title, msg);
         });
 
     connect(animCtrl, &AnimationController::playStateChanged,
@@ -87,8 +87,8 @@ AnimStudio::AnimStudio(QWidget* parent)
         });
 
     connect(animCtrl, &AnimationController::quantizationFinished,
-        this, [&]() {
-            ui.statusBar->showMessage("Color reduction complete!");
+        this, [&](bool success) {
+            ui.statusBar->showMessage(success ? "Color reduction complete!" : "Color reduction incomplete.");
         });
 
     // Create a permanent label on the right side of the statusbar
@@ -202,7 +202,12 @@ void AnimStudio::resetInterface(){
 }
 
 void AnimStudio::updateFrameTimeDisplay() {
-    if (!animCtrl->isLoaded()) return;
+    if (!animCtrl->isLoaded()) {
+        // Nothing loaded -> clear out the views
+        ui.currentFrameView->setText("0/0");
+        ui.currentTimecodeView->setText("0:00.000");
+        return;
+    }
 
     int idx = ui.timelineSlider->value();
     int total = animCtrl->getFrameCount();
@@ -280,8 +285,9 @@ void AnimStudio::on_actionImport_Animation_triggered()
 
 void AnimStudio::on_actionClose_Image_Sequence_triggered()
 {
-    resetInterface();
+    animCtrl->cancelQuantization();
     animCtrl->clear();
+    resetInterface();
     updateMetadata(std::nullopt);
 }
 
@@ -325,9 +331,12 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
 void AnimStudio::on_actionReduce_Colors_triggered()
 {
     ReduceColorsDialog dlg(this);
-    // whenever user confirms, call quantize()
+    // whenever user confirms, grab the palette and call quantize(palette)
     connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
-        animCtrl, &AnimationController::quantize);
+        this, [&dlg, this]() {
+            // pull the user’s choice from the dialog
+            animCtrl->quantize(dlg.selectedPalette());
+        });
     dlg.exec();
 }
 
@@ -374,6 +383,8 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     ui.actionExport_Current_Frame->setEnabled(hasData);
     ui.actionReduce_Colors->setEnabled(hasData);
     ui.actionShow_Reduced_Colors->setEnabled(hasData && anim.value().quantized);
+
+    updateFrameTimeDisplay();
 
     if (hasData) {
         auto data = anim.value();
@@ -424,8 +435,6 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
         ui.loopFrameSpinBox->setValue(data.loopPoint);
         int keyframeCount = data.keyframeIndices.size();
         ui.keyframeAllCheckBox->setChecked((int)data.keyframeIndices.size() == data.frameCount);
-
-        updateFrameTimeDisplay();
     } else {
         ui.nameEdit->clear();
         ui.typeView->clear();
