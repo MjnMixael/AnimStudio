@@ -45,6 +45,8 @@ public:
     // metadata
     void setBaseName(const QString& name);
     QSize getResolution() const;
+    int getFrameCount() const { return m_data.frameCount; }
+    int getFPS() const { return m_data.fps; }
 
     // clean up
     void clear();

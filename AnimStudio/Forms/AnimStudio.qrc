@@ -1,5 +1,11 @@
 <RCC>
   <qresource prefix="AnimStudio">
+    <file>Resources/frame_forward.png</file>
+    <file>Resources/frame_reverse.png</file>
+    <file>Resources/pause.png</file>
+    <file>Resources/play.png</file>
+    <file>Resources/to_loop.png</file>
+    <file>Resources/to_start.png</file>
     <file>Resources/close.png</file>
     <file>Resources/export.png</file>
     <file>Resources/export_all_frames.png</file>

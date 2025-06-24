@@ -76,6 +76,12 @@ QPushButton:pressed {
     stop:0 #333333,
     stop:1 #1E1E1E
   );
+}
+
+QStatusBar::item {
+  border: none;        /* no lines */
+  margin: 0px;         /* optionally collapse any extra space */
+  padding: 0px;        /* ditto */
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -86,7 +92,7 @@ QPushButton:pressed {
        <widget class="QWidget" name="playerColumn" native="true">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>7</horstretch>
+          <horstretch>5</horstretch>
           <verstretch>0</verstretch>
          </sizepolicy>
         </property>
@@ -118,8 +124,8 @@ QPushButton:pressed {
                <rect>
                 <x>0</x>
                 <y>0</y>
-                <width>764</width>
-                <height>391</height>
+                <width>699</width>
+                <height>387</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -184,11 +190,154 @@ QPushButton:pressed {
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="playPauseButton">
-             <property name="text">
-              <string>Play</string>
-             </property>
-            </widget>
+            <layout class="QHBoxLayout" name="playbackControls">
+             <item>
+              <widget class="Line" name="line_5">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="playPauseButton">
+               <property name="toolTip">
+                <string>Stop or start playback</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="AnimStudio.qrc">
+                 <normaloff>:/AnimStudio/Resources/play.png</normaloff>:/AnimStudio/Resources/play.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Line" name="line_6">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="jumpStartButton">
+               <property name="toolTip">
+                <string>Jump to start</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="AnimStudio.qrc">
+                 <normaloff>:/AnimStudio/Resources/to_start.png</normaloff>:/AnimStudio/Resources/to_start.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="jumpLoopButton">
+               <property name="toolTip">
+                <string>Jump to loop frame</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="AnimStudio.qrc">
+                 <normaloff>:/AnimStudio/Resources/to_loop.png</normaloff>:/AnimStudio/Resources/to_loop.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Line" name="line_7">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="previousFrameButton">
+               <property name="toolTip">
+                <string>Previous frame</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="AnimStudio.qrc">
+                 <normaloff>:/AnimStudio/Resources/frame_reverse.png</normaloff>:/AnimStudio/Resources/frame_reverse.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="nextFrameButton">
+               <property name="toolTip">
+                <string>Next frame</string>
+               </property>
+               <property name="text">
+                <string/>
+               </property>
+               <property name="icon">
+                <iconset resource="AnimStudio.qrc">
+                 <normaloff>:/AnimStudio/Resources/frame_forward.png</normaloff>:/AnimStudio/Resources/frame_forward.png</iconset>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Line" name="line_4">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="Line" name="line">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="currentFrameView">
+               <property name="text">
+                <string>0/0</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Line" name="line_3">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="currentTimecodeView">
+               <property name="text">
+                <string>0:00</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="Line" name="line_2">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </item>
           </layout>
          </item>
@@ -224,6 +373,13 @@ QPushButton:pressed {
            </property>
           </widget>
          </item>
+         <item row="1" column="1">
+          <widget class="QLabel" name="typeView">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
          <item row="2" column="0">
           <widget class="QLabel" name="fpsLabel">
            <property name="text">
@@ -245,55 +401,10 @@ QPushButton:pressed {
            </property>
           </widget>
          </item>
-         <item row="5" column="0">
-          <widget class="QLabel" name="resolutionLabel">
-           <property name="text">
-            <string>Resolution:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QLabel" name="loopFrameLabel">
-           <property name="text">
-            <string>Loop Frame:</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="1">
-          <widget class="QSpinBox" name="loopFrameSpinBox"/>
-         </item>
          <item row="3" column="1">
           <widget class="QLabel" name="framesView">
            <property name="text">
             <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1">
-          <widget class="QLabel" name="typeView">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="1">
-          <widget class="QLabel" name="resolutionView">
-           <property name="text">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0">
-          <widget class="QLabel" name="keyframeAllLabel">
-           <property name="text">
-            <string>Keyframe All: </string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="1">
-          <widget class="QCheckBox" name="keyframeAllCheckBox">
-           <property name="tristate">
-            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -308,6 +419,54 @@ QPushButton:pressed {
           <widget class="QLabel" name="lengthView">
            <property name="text">
             <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QLabel" name="resolutionLabel">
+           <property name="text">
+            <string>Resolution:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1">
+          <widget class="QLabel" name="resolutionView">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QLabel" name="loopFrameLabel">
+           <property name="text">
+            <string>Loop Frame:</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="1">
+          <widget class="QSpinBox" name="loopFrameSpinBox">
+           <property name="toolTip">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0">
+          <widget class="QLabel" name="keyframeAllLabel">
+           <property name="toolTip">
+            <string>Used for mainhall doors</string>
+           </property>
+           <property name="text">
+            <string>Keyframe All: </string>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="1">
+          <widget class="QCheckBox" name="keyframeAllCheckBox">
+           <property name="toolTip">
+            <string>Used for mainhall doors</string>
+           </property>
+           <property name="tristate">
+            <bool>false</bool>
            </property>
           </widget>
          </item>

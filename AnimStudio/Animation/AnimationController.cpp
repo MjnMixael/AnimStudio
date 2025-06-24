@@ -67,7 +67,7 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
     if (!m_data.keyframeIndices.empty()) {
         m_data.loopPoint = m_data.keyframeIndices[0];
     }
-    m_data.totalLength = m_data.frameCount / m_data.fps;
+    m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
     m_loaded = true;
     emit animationLoaded();
     emit metadataChanged(m_data);
@@ -122,6 +122,8 @@ void AnimationController::setFps(int fps) {
         m_data.fps = fps;
         if (m_timer.isActive())
             m_timer.start(1000 / fps);
+
+        m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
         emit metadataChanged(m_data);
     }
 }

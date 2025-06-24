@@ -42,6 +42,7 @@ AnimStudio::AnimStudio(QWidget* parent)
             ui.timelineSlider->blockSignals(true);
             ui.timelineSlider->setValue(idx);
             ui.timelineSlider->blockSignals(false);
+            updateFrameTimeDisplay();
         });
 
     connect(animCtrl, &AnimationController::metadataChanged,
@@ -69,7 +70,7 @@ AnimStudio::AnimStudio(QWidget* parent)
 
     connect(animCtrl, &AnimationController::playStateChanged,
         this, [&](bool playing) {
-            ui.playPauseButton->setText(playing ? "Pause" : "Play");
+            ui.playPauseButton->setIcon(playing ? QIcon(":/AnimStudio/Resources/pause.png") : QIcon(":/AnimStudio/Resources/play.png"));
         });
 
     connect(animCtrl, &AnimationController::animationLoaded,
@@ -137,6 +138,29 @@ void AnimStudio::on_playPauseButton_clicked() {
     }
 }
 
+void AnimStudio::on_jumpStartButton_clicked() {
+    animCtrl->seekFrame(0);
+}
+
+void AnimStudio::on_jumpLoopButton_clicked() {
+    animCtrl->seekFrame(animCtrl->getLoopPoint());
+}
+
+void AnimStudio::on_previousFrameButton_clicked() {
+    int current = ui.timelineSlider->value();
+    if (current > 0) {
+        animCtrl->seekFrame(current - 1);
+    }
+}
+
+void AnimStudio::on_nextFrameButton_clicked() {
+    int current = ui.timelineSlider->value();
+    int max = ui.timelineSlider->maximum();
+    if (current < max) {
+        animCtrl->seekFrame(current + 1);
+    }
+}
+
 void AnimStudio::on_fpsSpinBox_valueChanged(int value) {
     animCtrl->setFps(value); // FPS to ms
 }
@@ -174,6 +198,33 @@ void AnimStudio::resetInterface(){
     //ui.previewLabel->setFixedSize(QSize());
     ui.previewLabel->adjustSize();
     ui.previewLabel->setAlignment(Qt::AlignCenter);
+}
+
+void AnimStudio::updateFrameTimeDisplay() {
+    if (!animCtrl->isLoaded()) return;
+
+    int idx = ui.timelineSlider->value();
+    int total = animCtrl->getFrameCount();
+    int fps = animCtrl->getFPS();
+
+    // — Frame X/Y —
+    ui.currentFrameView->setText(
+        QString("%1/%2").arg(idx + 1).arg(total)
+    );
+
+    // — Timecode mm:ss.mmm —
+    double seconds = idx / double(fps);
+    int wholeSec = int(seconds);
+    int mins = wholeSec / 60;
+    int secs = wholeSec % 60;
+    int msecs = int((seconds - wholeSec) * 1000);
+
+    ui.currentTimecodeView->setText(
+        QString("%1:%2.%3")
+        .arg(mins)
+        .arg(secs, 2, 10, QChar('0'))
+        .arg(msecs, 3, 10, QChar('0'))
+    );
 }
 
 void AnimStudio::on_actionExit_triggered()
@@ -305,7 +356,13 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     ui.fpsSpinBox->setEnabled(hasData);
     ui.loopFrameSpinBox->setEnabled(!animCtrl->getAllKeyframesActive());
     ui.keyframeAllCheckBox->setEnabled(hasData);
+
+    // Playback controls
     ui.playPauseButton->setEnabled(hasData);
+    ui.jumpStartButton->setEnabled(hasData);
+    ui.jumpLoopButton->setEnabled(hasData);
+    ui.previousFrameButton->setEnabled(hasData);
+    ui.nextFrameButton->setEnabled(hasData);
     ui.timelineSlider->setEnabled(hasData);
 
     // Toolbar buttons
@@ -344,7 +401,16 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
 
         ui.fpsSpinBox->setValue(data.fps);
 
-        ui.lengthView->setText(QString("%1:%2").arg(data.totalLength / 60).arg(data.totalLength %60, 2, 10, QChar('0')));
+        float totalSec = data.totalLength;
+        int totalMs = static_cast<int>(totalSec * 1000 + 0.5f);
+        int mins = totalMs / 60000;
+        int secs = (totalMs / 1000) % 60;
+        int msecs = totalMs % 1000;
+        QString dur = QString("%1:%2.%3")
+            .arg(mins)
+            .arg(secs, 2, 10, QChar('0'))   // width=2, pad with '0'
+            .arg(msecs, 3, 10, QChar('0'));  // width=3, pad with '0'
+        ui.lengthView->setText(dur);
 
         ui.framesView->setText(QString::number(data.frameCount));
         ui.resolutionView->setText(QString("%1 x %2")
@@ -355,6 +421,8 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
         ui.loopFrameSpinBox->setValue(data.loopPoint);
         int keyframeCount = data.keyframeIndices.size();
         ui.keyframeAllCheckBox->setChecked((int)data.keyframeIndices.size() == data.frameCount);
+
+        updateFrameTimeDisplay();
     } else {
         ui.nameEdit->clear();
         ui.typeView->clear();

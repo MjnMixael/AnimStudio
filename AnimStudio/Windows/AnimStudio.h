@@ -48,6 +48,10 @@ private slots:
     
     // Animation Control
     void on_playPauseButton_clicked();
+    void on_jumpStartButton_clicked();
+    void on_jumpLoopButton_clicked();
+    void on_previousFrameButton_clicked();
+    void on_nextFrameButton_clicked();
     void on_timelineSlider_valueChanged(int value);
 
     // Metadata Updates
@@ -74,6 +78,8 @@ private:
     void deleteSpinner();
 
     void adjustPreviewSize();
+
+    void updateFrameTimeDisplay();
 
     // Show memory usage
     qint64 currentMemoryBytes();

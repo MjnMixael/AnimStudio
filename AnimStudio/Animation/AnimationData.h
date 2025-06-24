@@ -26,7 +26,7 @@ struct AnimationData {
     QSize originalSize; // size of the original frames
     int frameCount = 0;
     int fps = 15;
-    int totalLength = 0;
+    float totalLength = 0;
     QVector<int> keyframeIndices;
     int loopPoint = 0; // frame index to loop back to
 
