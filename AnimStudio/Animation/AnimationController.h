@@ -8,6 +8,7 @@
 
 #include "AnimationData.h"
 #include "Quantizer.h"
+#include "Formats/ImageFormats.h"
 
 class AnimationController : public QObject {
     Q_OBJECT
@@ -22,7 +23,7 @@ public:
     void loadApngFile(const QString& path);
 
     // exporting
-    void exportAnimation(const QString& path, AnimationType type);
+    void exportAnimation(const QString& path, AnimationType type, ImageFormat fmt);
     void exportAllFrames(const QString& dir, const QString& ext);
     void exportCurrentFrame(const QString& path, const QString& ext);
 

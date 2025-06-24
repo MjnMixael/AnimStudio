@@ -30,22 +30,22 @@ void AnimationController::loadApngFile(const QString& path) {
     beginLoad(AnimationType::Apng, path);
 }
 
-void AnimationController::exportAnimation(const QString& path, AnimationType type) {
+void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt) {
     if (!m_loaded) return;
-    /*switch (type) {
-    case AnimationType::Raw:
-        RawExporter::exportAllFrames(m_data, path, RawExporter::Format::Png);
-        break;
-    case AnimationType::Ani:
-        AniExporter::exportAniFile(m_data, path);
-        break;
-    case AnimationType::Eff:
-        EffExporter::exportEffFile(m_data, path);
-        break;
-    case AnimationType::Apng:
-        ApngExporter::exportApngFile(m_data, path);
-        break;
-    }*/
+    switch (type) {
+        case AnimationType::Ani:
+            //AniExporter::exportAniFile(m_data, path);
+            break;
+        case AnimationType::Eff:
+            EffExporter::exportAnimation(m_data, path, fmt);
+            break;
+        case AnimationType::Apng:
+            //ApngExporter::exportApngFile(m_data, path);
+            break;
+        default:
+            emit errorOccurred("Export Failed", "Unsupported animation type for export.");
+            return;
+    }
 }
 
 void AnimationController::exportAllFrames(const QString& dir, const QString& ext) {
