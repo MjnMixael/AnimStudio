@@ -21,6 +21,11 @@ public:
     void loadEffFile(const QString& path);
     void loadApngFile(const QString& path);
 
+    // exporting
+    void exportAnimation(const QString& path, AnimationType type);
+    void exportAllFrames(const QString& dir, const QString& ext);
+    void exportCurrentFrame(const QString& path, const QString& ext);
+
     // status
     bool isLoaded() const { return m_loaded; }
 
@@ -46,6 +51,7 @@ public:
 
     // metadata
     void setBaseName(const QString& name);
+    QString getBaseName() const;
     QSize getResolution() const;
     int getFrameCount() const;
     int getFPS() const;

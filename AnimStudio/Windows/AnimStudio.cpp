@@ -20,6 +20,7 @@
 #include <optional>
 #include <QFormLayout>
 #include <QFile>
+#include <QInputDialog>
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <psapi.h>
@@ -211,8 +212,9 @@ void AnimStudio::updateFrameTimeDisplay() {
         return;
     }
 
-    int idx = ui.timelineSlider->value();
-    int total = animCtrl->getFrameCount();
+    // zero based
+    int idx = ui.timelineSlider->value() - 1;
+    int total = animCtrl->getFrameCount() - 1;
     int fps = animCtrl->getFPS();
 
     // — Frame X/Y —
@@ -310,25 +312,70 @@ void AnimStudio::on_actionExport_Animation_triggered()
 
 void AnimStudio::on_actionExport_All_Frames_triggered()
 {
-    QString dir = QFileDialog::getExistingDirectory(this, "Export All Frames Directory");
-    if (dir.isEmpty())
+    // Let the user pick a directory
+    QString folder = QFileDialog::getExistingDirectory(
+        this,
+        "Select Folder to Export All Frames",
+        QDir::homePath(),                          // starting location
+        QFileDialog::ShowDirsOnly                   // only dirs, not files
+    );
+    if (folder.isEmpty())
         return;
-    // dispatch to controller
-    //animCtrl->exportAllFrames(dir);
+
+    // Let the user pick the image format (png/jpg/etc)
+    QStringList formats = { "png", "jpg", "tga", "pcx" };
+    bool ok = false;
+    QString ext = QInputDialog::getItem(
+        this,
+        "Choose Export Format",
+        "Format:",
+        formats,
+        0,      // default to first
+        false,  // editable?
+        &ok
+    );
+    if (!ok || ext.isEmpty())
+        return;
+
+    // Dispatch directory + extension to your controller
+    animCtrl->exportAllFrames(folder, ext);
 }
 
 void AnimStudio::on_actionExport_Current_Frame_triggered()
 {
+    // Include all supported types in the filter
+    QString filter =
+        "PNG Images (*.png);;"
+        "JPEG Images (*.jpg *.jpeg);;"
+        "TGA Images (*.tga);;"
+        "PCX Images (*.pcx);;"
+        "All Files (*.*)";
+
+    int frameCount = animCtrl->getFrameCount();      // total frames
+    int maxIndex = frameCount - 1;                // last index
+    int digits = QString::number(maxIndex).length();
+
+    int frameIdx = ui.timelineSlider->value();
+    QString defaultName = QString("%1_%2.png")
+        .arg(animCtrl->getBaseName())
+        .arg(frameIdx, digits, 10, QChar('0'));
+
     QString filePath = QFileDialog::getSaveFileName(
         this,
         "Export Current Frame",
-        QString(),
-        "Image Files (*.png *.jpg *.bmp);;All Files (*.*)"
+        defaultName,
+        filter
     );
     if (filePath.isEmpty())
         return;
-    // dispatch to controller
-    //animCtrl->exportCurrentFrame(filePath);
+
+    // Determine format from the file extension
+    QFileInfo info(filePath);
+    QString ext = info.suffix().toLower();
+
+    // dispatch to controller – make sure your controller method
+    // signature matches: (const QString&, Format)
+    animCtrl->exportCurrentFrame(filePath, ext);
 }
 
 void AnimStudio::on_actionReduce_Colors_triggered()

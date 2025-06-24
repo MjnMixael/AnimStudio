@@ -6,6 +6,10 @@
 #include "Formats/Import/AniImporter.h"
 #include "Formats/Import/EffImporter.h"
 #include "Formats/Import/ApngImporter.h"
+#include "Formats/Export/RawExporter.h"
+#include "Formats/Export/AniExporter.h"
+#include "Formats/Export/EffExporter.h"
+#include "Formats/Export/ApngExporter.h"
 
 AnimationController::AnimationController(QObject* parent)
     : QObject(parent)
@@ -24,6 +28,86 @@ void AnimationController::loadEffFile(const QString& path) {
 }
 void AnimationController::loadApngFile(const QString& path) {
     beginLoad(AnimationType::Apng, path);
+}
+
+void AnimationController::exportAnimation(const QString& path, AnimationType type) {
+    if (!m_loaded) return;
+    /*switch (type) {
+    case AnimationType::Raw:
+        RawExporter::exportAllFrames(m_data, path, RawExporter::Format::Png);
+        break;
+    case AnimationType::Ani:
+        AniExporter::exportAniFile(m_data, path);
+        break;
+    case AnimationType::Eff:
+        EffExporter::exportEffFile(m_data, path);
+        break;
+    case AnimationType::Apng:
+        ApngExporter::exportApngFile(m_data, path);
+        break;
+    }*/
+}
+
+void AnimationController::exportAllFrames(const QString& dir, const QString& ext) {
+    if (!m_loaded) return;
+    // map string to enum
+    RawExporter::Format fmt = RawExporter::Format::Png;  // default
+    if (ext == "png") {
+        fmt = RawExporter::Format::Png;
+    } else if (ext == "jpg" || ext == "jpeg") {
+        fmt = RawExporter::Format::Jpg;
+    } else if (ext == "tga") {
+        fmt = RawExporter::Format::Tga;
+    } else if (ext == "pcx") {
+        fmt = RawExporter::Format::Pcx;
+    }
+
+    bool ok = RawExporter::exportAllFrames(
+        m_data,            // your loaded AnimationData
+        dir,               // output directory
+        fmt                // format to export in
+    );
+
+    if (!ok) {
+        emit errorOccurred(
+            "Export Failed",
+            QString("Could not write frames to \"%1\"").arg(dir)
+        );
+    }
+}
+
+void AnimationController::exportCurrentFrame(const QString& path, const QString& ext) {
+    if (!m_loaded || m_currentIndex < 0 || m_currentIndex >= m_data.frames.size()) return;
+    const AnimationFrame& frame = getCurrentFrames()[m_currentIndex];
+    
+    // map string to enum
+    RawExporter::Format fmt = RawExporter::Format::Png;  // default
+    if (ext == "png") {
+        fmt = RawExporter::Format::Png;
+    } else if (ext == "jpg" || ext == "jpeg") {
+        fmt = RawExporter::Format::Jpg;
+    } else if (ext == "tga") {
+        fmt = RawExporter::Format::Tga;
+    } else if (ext == "pcx") {
+        fmt = RawExporter::Format::Pcx;
+    }
+
+    // call into RawExporter
+    bool ok = RawExporter::exportCurrentFrame(
+        m_data,            // your loaded AnimationData
+        m_currentIndex,    // current frame index
+        path,              // full path chosen by user
+        fmt
+    );
+
+    if (!ok) {
+        emit errorOccurred(
+            "Export Failed",
+            QString("Could not write frame %1 to \"%2\"")
+            .arg(m_currentIndex)
+            .arg(path)
+        );
+    }
 }
 
 void AnimationController::beginLoad(AnimationType type, const QString& path) {
@@ -266,6 +350,10 @@ bool AnimationController::isQuantizeRunning() const {
 void AnimationController::setBaseName(const QString & name) {
     m_data.baseName = name;
     emit metadataChanged(m_data);
+}
+
+QString AnimationController::getBaseName() const {
+    return m_data.baseName;
 }
 
 QSize AnimationController::getResolution() const {
