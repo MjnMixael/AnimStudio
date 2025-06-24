@@ -556,6 +556,7 @@ QStatusBar::item {
    <addaction name="separator"/>
    <addaction name="actionReduce_Colors"/>
    <addaction name="actionShow_Reduced_Colors"/>
+   <addaction name="actionCancel_Reduce_Colors"/>
   </widget>
   <action name="actionOpenImageSequence">
    <property name="icon">
@@ -636,6 +637,18 @@ QStatusBar::item {
    </property>
    <property name="text">
     <string>Show Reduced Colors</string>
+   </property>
+  </action>
+  <action name="actionCancel_Reduce_Colors">
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/cancel.png</normaloff>:/AnimStudio/Resources/cancel.png</iconset>
+   </property>
+   <property name="text">
+    <string>Cancel Reduce Colors</string>
+   </property>
+   <property name="toolTip">
+    <string>Cancel reduce colors</string>
    </property>
   </action>
  </widget>

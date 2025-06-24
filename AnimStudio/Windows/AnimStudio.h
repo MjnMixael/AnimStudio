@@ -44,6 +44,7 @@ private slots:
     void on_actionExport_Current_Frame_triggered();
     void on_actionReduce_Colors_triggered();
     void on_actionShow_Reduced_Colors_toggled(bool checked);
+    void on_actionCancel_Reduce_Colors_triggered();
 
     
     // Animation Control

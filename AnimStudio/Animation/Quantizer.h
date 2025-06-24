@@ -45,12 +45,18 @@ public:
         return cancelRequested_.load();
     }
 
+    bool isRunning() const {
+        return running_;
+    }
+
 private:
     int           qualityMin_ = 0;
     int           qualityMax_ = 100;
-    float         ditheringLevel_ = 0.8f;
+    float         ditheringLevel_ = 0.0f;
     int           maxColors_ = 256;
     QVector<QRgb> customPalette_;
 
     std::atomic<bool> cancelRequested_{ false };
+
+    bool          running_ = false; // true if quantization is in progress
 };

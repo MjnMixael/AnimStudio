@@ -169,7 +169,7 @@ bool AnimationController::getAllKeyframesActive() const {
     return m_data.keyframeIndices.size() == m_data.frames.size();
 }
 
-void AnimationController::quantize(const QVector<QRgb>& testPalette) {
+void AnimationController::quantize(const QVector<QRgb>& palette, const int quality, const int maxColors) {
     // reset any previous quantized data
     m_data.quantizedFrames = m_data.frames;
     m_data.quantized = false;
@@ -178,17 +178,20 @@ void AnimationController::quantize(const QVector<QRgb>& testPalette) {
     QVector<AnimationFrame> framesCopy = m_data.frames;
 
     // 1) Launch async quantization with progress callback
-    auto future = QtConcurrent::run([this, framesCopy, testPalette]() -> std::optional<QuantResult> {
+    auto future = QtConcurrent::run([this, framesCopy, palette, quality, maxColors]() -> std::optional<QuantResult> {
         m_quantizer.reset();
 
         // Build and configure our Quantizer
-        if (!testPalette.isEmpty()) {
-            m_quantizer.setCustomPalette(testPalette);
+        if (!palette.isEmpty()) {
+            m_quantizer.setCustomPalette(palette);
         }
-        // (Optionally you could chain other settings here:)
-        //    .setQualityRange(10,90)
-        //    .setDitheringLevel(0.5f)
-        //    .setMaxColors(128);
+        if (quality >= 0 && quality <= 100) {
+            m_quantizer.setQualityRange(0, quality);
+        }
+        if (maxColors > 0 && maxColors <= 256) {
+            m_quantizer.setMaxColors(maxColors);
+        }
+        // TODO dithering?
 
         // Run the quantization
         return m_quantizer.quantize(
@@ -214,14 +217,10 @@ void AnimationController::quantize(const QVector<QRgb>& testPalette) {
 
         bool success = true;
         if (!opt) {
-            QString msg;
-            if (m_quantizer.isCancelRequested()) {
-                msg = "Color reduction task was cancelled by user.";
-            } else {
-                msg = "Color reduction task failed to complete successfully.";
+            if (!m_quantizer.isCancelRequested()) {
+                emit errorOccurred("Color Reduction Failed", "Color reduction task failed to complete successfully.");
             }
             success = false;
-            emit errorOccurred("Color Reduction Failed", msg);
         } else {
             // commit the quantized frames & switch into quantized mode
             m_data.quantizedFrames = std::move(opt->frames);
@@ -258,6 +257,10 @@ void AnimationController::toggleShowQuantized(bool show) {
 
 bool AnimationController::isShowingQuantized() const {
     return m_showQuantized;
+}
+
+bool AnimationController::isQuantizeRunning() const {
+    return m_quantizer.isRunning();
 }
 
 void AnimationController::setBaseName(const QString & name) {

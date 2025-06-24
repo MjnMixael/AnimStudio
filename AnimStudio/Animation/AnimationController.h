@@ -38,10 +38,11 @@ public:
     bool getAllKeyframesActive() const;
 
     // quantization
-    void quantize(const QVector<QRgb>& testPalette);
+    void quantize(const QVector<QRgb>& palette, const int quality, const int maxColors);
     void cancelQuantization();
     void toggleShowQuantized(bool show);
     bool isShowingQuantized() const;
+    bool isQuantizeRunning() const;
 
     // metadata
     void setBaseName(const QString& name);

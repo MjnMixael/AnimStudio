@@ -15,6 +15,8 @@ public:
     explicit ReduceColorsDialog(QWidget* parent = nullptr);
     ~ReduceColorsDialog();
     QVector<QRgb> selectedPalette() const;
+    int getQuality() const;
+    int getMaxColors() const;
 
 signals:
     /// Emitted when the user confirms reduction.

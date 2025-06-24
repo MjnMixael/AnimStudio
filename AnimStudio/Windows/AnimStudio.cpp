@@ -88,6 +88,8 @@ AnimStudio::AnimStudio(QWidget* parent)
 
     connect(animCtrl, &AnimationController::quantizationFinished,
         this, [&](bool success) {
+            ui.actionReduce_Colors->setEnabled(true);
+            ui.actionCancel_Reduce_Colors->setEnabled(false);
             ui.statusBar->showMessage(success ? "Color reduction complete!" : "Color reduction incomplete.");
         });
 
@@ -289,6 +291,7 @@ void AnimStudio::on_actionClose_Image_Sequence_triggered()
     animCtrl->clear();
     resetInterface();
     updateMetadata(std::nullopt);
+    ui.statusBar->clearMessage();
 }
 
 void AnimStudio::on_actionExport_Animation_triggered()
@@ -334,8 +337,17 @@ void AnimStudio::on_actionReduce_Colors_triggered()
     // whenever user confirms, grab the palette and call quantize(palette)
     connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
         this, [&dlg, this]() {
+            // enable the cancel button
+            ui.actionReduce_Colors->setEnabled(false);
+            ui.actionCancel_Reduce_Colors->setEnabled(true);
+
+            // show non quantized and disable the toggle button
+            animCtrl->toggleShowQuantized(false);
+            ui.actionShow_Reduced_Colors->setChecked(false);
+            ui.actionShow_Reduced_Colors->setEnabled(false);
+
             // pull the user’s choice from the dialog
-            animCtrl->quantize(dlg.selectedPalette());
+            animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors());
         });
     dlg.exec();
 }
@@ -343,6 +355,11 @@ void AnimStudio::on_actionReduce_Colors_triggered()
 void AnimStudio::on_actionShow_Reduced_Colors_toggled(bool checked)
 {
     animCtrl->toggleShowQuantized(checked);
+}
+
+void AnimStudio::on_actionCancel_Reduce_Colors_triggered()
+{
+    animCtrl->cancelQuantization();
 }
 
 void AnimStudio::resizeEvent(QResizeEvent* event)
@@ -381,8 +398,9 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     ui.actionExport_Animation->setEnabled(hasData);
     ui.actionExport_All_Frames->setEnabled(hasData);
     ui.actionExport_Current_Frame->setEnabled(hasData);
-    ui.actionReduce_Colors->setEnabled(hasData);
+    ui.actionReduce_Colors->setEnabled(hasData && !animCtrl->isQuantizeRunning());
     ui.actionShow_Reduced_Colors->setEnabled(hasData && anim.value().quantized);
+    ui.actionCancel_Reduce_Colors->setEnabled(hasData && animCtrl->isQuantizeRunning());
 
     updateFrameTimeDisplay();
 

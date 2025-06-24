@@ -37,7 +37,7 @@ void Quantizer::reset() {
     cancelRequested_.store(false);
     qualityMin_ = 0;
     qualityMax_ = 100;
-    ditheringLevel_ = 0.8f;
+    ditheringLevel_ = 0.0f;
     maxColors_ = 256;
     customPalette_.clear();
 }
@@ -51,6 +51,8 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         qDebug() << "Quantize: no source frames provided";
         return std::nullopt;
     }
+
+    running_ = true;
 
     // Resource handles
     liq_attr* attr = nullptr;
@@ -72,6 +74,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         for (auto* img : liqImages) liq_image_destroy(img);
         if (hist)         liq_histogram_destroy(hist);
         if (attr)         liq_attr_destroy(attr);
+        running_ = false;
         return std::nullopt;
     };
 
@@ -90,13 +93,21 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
     // Create the histogram from palette if set
     if (usingCustomPalette) {
-        liq_set_max_colors(attr, static_cast<int>(customPalette_.size()));
+        int numColors = fmin(256, static_cast<int>(customPalette_.size()));
+        liq_set_max_colors(attr, numColors);
 
         // Build an array of histogram entries from your palette
         std::vector<liq_histogram_entry> entries;
         entries.reserve(customPalette_.size());
+
+        int colorCount = 0;
         for (QRgb qc : customPalette_) {
             if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
+
+            if (colorCount >= numColors) {
+                qWarning() << "Quantize: custom palette exceeds max colors, truncating";
+                break; // Limit to max colors
+            }
 
             liq_color col = {
                 static_cast<unsigned char>(qRed(qc)),
@@ -116,6 +127,8 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
             {
                 qWarning() << "Quantize: liq_histogram_add_colors failed";
             }
+
+            colorCount++;
         }
 
         
@@ -150,7 +163,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         }
     }
 
-    // 3) Generate global palette from histogram
+    // Generate global palette from histogram
     if (LIQ_OK != liq_histogram_quantize(hist, attr, &resultPal) || !resultPal) {
         return quit("Quantize: liq_histogram_quantize failed");
     }
@@ -161,7 +174,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     // If the user requested cancellation, we can stop here
     if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
 
-    // 4) Prepare output structure
+    // Prepare output structure
     QuantResult out;
     out.frames.reserve(src.size());
 
@@ -177,7 +190,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         table.append(qRgba(c.r, c.g, c.b, c.a));
     }
 
-    // 5) Remap each frame with the same palette
+    // Remap each frame with the same palette
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
     QByteArray buffer(static_cast<int>(bufSize), 0);
     for (int i = 0; i < liqImages.size(); i++) {
@@ -211,9 +224,11 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         }
     }
 
-    // 6) Clean up quantization result & attributes
+    // Clean up quantization result & attributes
     liq_result_destroy(resultPal);
     liq_attr_destroy(attr);
+
+    running_ = false;
 
     return out;
 }

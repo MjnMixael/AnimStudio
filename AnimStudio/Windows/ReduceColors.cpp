@@ -14,7 +14,7 @@ ReduceColorsDialog::ReduceColorsDialog(QWidget* parent) :
     ui->setupUi(this);
 
     // 1) Populate palette dropdown
-    ui->paletteComboBox->addItem(tr("None"));
+    ui->paletteComboBox->addItem(tr("Automatic"));
     ui->paletteComboBox->addItem(tr("Shield"));
     ui->paletteComboBox->addItem(tr("HUD"));
     ui->paletteComboBox->addItem(tr("FS1 Ship"));
@@ -26,10 +26,20 @@ ReduceColorsDialog::ReduceColorsDialog(QWidget* parent) :
     QPushButton* reduceBtn = ui->buttonBox->button(QDialogButtonBox::Apply);
     reduceBtn->setText(tr("Reduce"));
 
-    // When they click “Reduce”, emit our signal and close
+    // When they click "Reduce", emit our signal and close
     connect(reduceBtn, &QPushButton::clicked, this, [this]() {
         emit reduceConfirmed();
         accept();
+        });
+
+    // Disable the max-colors spin box whenever a built - in palette is selected
+    // and re-enable it when "Automatic" (index 0) is chosen.
+    ui->maxColorsSpinBox->setEnabled(ui->paletteComboBox->currentIndex() == 0);
+    connect(ui->paletteComboBox,
+        QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this,
+        [this](int idx) {
+            ui->maxColorsSpinBox->setEnabled(idx == 0);
         });
 }
 
@@ -45,6 +55,16 @@ QVector<QRgb> ReduceColorsDialog::selectedPalette() const {
         case 6: return QVector<QRgb>(std::begin(Fs2SelectWepPalette), std::end(Fs2SelectWepPalette));
         default: return {};
     }
+}
+
+int ReduceColorsDialog::getQuality() const {
+    return ui->qualitySpinBox->value();
+}
+int ReduceColorsDialog::getMaxColors() const {
+    if (ui->paletteComboBox->currentIndex() > 0) {
+        return selectedPalette().size();
+    }
+    return ui->maxColorsSpinBox->value();
 }
 
 ReduceColorsDialog::~ReduceColorsDialog()
