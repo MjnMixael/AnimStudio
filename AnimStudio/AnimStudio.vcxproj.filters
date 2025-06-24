@@ -192,6 +192,9 @@
     <ClCompile Include="Animation\AnimationController.cpp">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
+    <ClCompile Include="Windows\ReduceColors.cpp">
+      <Filter>Source Files\Windows</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -202,6 +205,9 @@
     </QtMoc>
     <QtMoc Include="Animation\AnimationController.h">
       <Filter>Source Files\Animation</Filter>
+    </QtMoc>
+    <QtMoc Include="Windows\ReduceColors.h">
+      <Filter>Source Files\Windows</Filter>
     </QtMoc>
   </ItemGroup>
   <ItemGroup>
@@ -310,6 +316,9 @@
   </ItemGroup>
   <ItemGroup>
     <QtUic Include="Forms\AnimStudio.ui">
+      <Filter>Forms</Filter>
+    </QtUic>
+    <QtUic Include="Forms\ReduceColors.ui">
       <Filter>Forms</Filter>
     </QtUic>
   </ItemGroup>

@@ -7,6 +7,7 @@
 #include "Formats/Import/EffImporter.h"
 #include "Formats/Import/RawImporter.h"
 #include "Widgets/spinnerwidget.h"
+#include "Windows/ReduceColors.h"
 
 #include <QFileDialog>
 #include <QDir>
@@ -323,9 +324,11 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
 
 void AnimStudio::on_actionReduce_Colors_triggered()
 {
-    // show spinner while quantizing
-    //createSpinner(ui.playerScrollArea);
-    animCtrl->quantize();
+    ReduceColorsDialog dlg(this);
+    // whenever user confirms, call quantize()
+    connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
+        animCtrl, &AnimationController::quantize);
+    dlg.exec();
 }
 
 void AnimStudio::on_actionShow_Reduced_Colors_toggled(bool checked)
