@@ -126,6 +126,24 @@ QComboBox::down-arrow {
   image: url(:/icons/arrow_down_white.png); /* Optional; or remove for default */
   width: 12px;
   height: 12px;
+}
+
+/* Disabled QComboBox */
+QComboBox:disabled {
+  background-color: #1C1C1C;
+  color: #777777;
+  border: 1px solid #444444;
+}
+
+/* Disabled drop-down arrow */
+QComboBox::drop-down:disabled {
+  background-color: #2A2A2A;
+  border-left: 1px solid #444444;
+}
+
+/* Optional: grayed-out arrow icon for disabled combo boxes */
+QComboBox::down-arrow:disabled {
+  image: url(:/icons/arrow_down_gray.png); /* or omit for no arrow */
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">

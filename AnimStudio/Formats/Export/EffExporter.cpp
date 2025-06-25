@@ -32,13 +32,11 @@ bool writeEffFile(const AnimationData& data,
     return true;
 }
 
-bool EffExporter::exportAnimation(const AnimationData& data,
-    const QString& outputDir,
-    ImageFormat fmt)
+bool EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, QString name)
 {
-    // 1) Create subfolder named after baseName
+    // 1) Create subfolder named after name
     QDir parentDir(outputDir);
-    QString subName = data.baseName;
+    QString subName = name;
     if (!parentDir.exists(subName)) {
         if (!parentDir.mkpath(subName)) {
             return false;
@@ -52,7 +50,7 @@ bool EffExporter::exportAnimation(const AnimationData& data,
     int frameCount = data.frames.size();
     for (int i = 0; i < frameCount; ++i) {
         QString fileName = QString("%1_%2%3")
-            .arg(data.baseName)
+            .arg(name)
             .arg(i, padDigits, 10, QChar('0'))
             .arg(extensionForFormat(fmt));
         QString fullPath = QDir(targetDir).filePath(fileName);
@@ -69,7 +67,7 @@ bool EffExporter::exportAnimation(const AnimationData& data,
     }
 
     // 3) Write the .eff metadata file inside the same subfolder
-    QString effName = data.baseName + ".eff";
+    QString effName = name + ".eff";
     QString effPath = QDir(targetDir).filePath(effName);
     ok = ok && writeEffFile(data, effPath, fmt);
 

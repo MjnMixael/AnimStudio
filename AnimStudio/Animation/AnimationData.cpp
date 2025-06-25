@@ -1,15 +1,25 @@
 #include "AnimationData.h"
 
+QVector<AnimationTypeData> AnimationTypes = {
+        { AnimationType::Ani,  true,  "Ani"  },
+        { AnimationType::Eff,  true,  "Eff"  },
+        { AnimationType::Apng, true,  "Apng" },
+        { AnimationType::Raw,  false, "Sequnce"  },
+};
+
 QString getTypeString(AnimationType type) {
-    QString typeStr;
-
-    switch (type) {
-        case AnimationType::Ani:  typeStr = "ANI"; break;
-        case AnimationType::Eff:  typeStr = "EFF"; break;
-        case AnimationType::Apng: typeStr = "APNG"; break;
-        case AnimationType::Raw:  typeStr = "Sequence"; break;
-        default:                  typeStr = "Unknown"; break;
+    for (const auto& t : AnimationTypes) {
+        if (t.type == type)
+            return t.name;
     }
+    return "Unknown";
+}
 
-    return typeStr;
+QVector<AnimationType> getExportableTypes() {
+    QVector<AnimationType> types;
+    for (const auto& t : AnimationTypes) {
+        if (t.exportable)
+            types.append(t.type);
+    }
+    return types;
 }

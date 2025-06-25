@@ -18,6 +18,14 @@ enum class AnimationType {
     Raw
 };
 
+struct AnimationTypeData {
+    AnimationType type;
+    bool exportable;
+    QString name;
+};
+
+extern QVector<AnimationTypeData> animationTypes;
+
 struct AnimationFrame {
     QImage image;
     int index;
@@ -42,3 +50,5 @@ struct AnimationData {
 };
 
 QString getTypeString(AnimationType type);
+
+QVector<AnimationType> getExportableTypes();

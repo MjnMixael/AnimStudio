@@ -57,9 +57,9 @@ void ApngExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-bool ApngExporter::exportAnimation(const AnimationData& data, const QString& path) {
+bool ApngExporter::exportAnimation(const AnimationData& data, const QString& path, QString name) {
     // Construct the full file path.
-    QString fullApngFilePath = QDir(path).filePath(data.baseName + ".png"); // Use PNG because that's what FSO expects
+    QString fullApngFilePath = QDir(path).filePath(name + ".png"); // Use PNG because that's what FSO expects
 
     QFile file(fullApngFilePath);
     if (!file.open(QIODevice::WriteOnly)) {

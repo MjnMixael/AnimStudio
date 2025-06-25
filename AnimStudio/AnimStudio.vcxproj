@@ -167,18 +167,21 @@
     <ClCompile Include="Formats\Import\RawImporter.cpp" />
     <ClCompile Include="Animation\Quantizer.cpp" />
     <ClCompile Include="Widgets\SpinnerWidget.cpp" />
+    <ClCompile Include="Windows\ExportAnimation.cpp" />
     <ClCompile Include="Windows\ReduceColors.cpp" />
     <QtRcc Include="Forms\AnimStudio.qrc" />
     <QtUic Include="Forms\AnimStudio.ui" />
     <QtMoc Include="Windows\AnimStudio.h" />
     <ClCompile Include="Windows\AnimStudio.cpp" />
     <ClCompile Include="main.cpp" />
+    <QtUic Include="Forms\ExportAnimation.ui" />
     <QtUic Include="Forms\ReduceColors.ui" />
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h" />
   </ItemGroup>
   <ItemGroup>
+    <QtMoc Include="Windows\ExportAnimation.h" />
     <QtMoc Include="Windows\ReduceColors.h" />
     <QtMoc Include="Animation\AnimationController.h" />
     <ClInclude Include="Animation\AnimationData.h" />

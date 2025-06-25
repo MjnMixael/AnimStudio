@@ -31,10 +31,19 @@ void AnimationController::loadApngFile(const QString& path) {
     beginLoad(AnimationType::Apng, path);
 }
 
-void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt) {
+void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, QString name) {
     if (!m_loaded) return;
 
     auto* watcher = new QFutureWatcher<bool>(this);
+
+    QString n;
+
+    if (name.isEmpty()) {
+        n = m_data.baseName;
+    } else {
+        QFileInfo info(name);
+        n = info.completeBaseName(); // removes the extension, if any
+    }
 
     QFuture<bool> future = QtConcurrent::run([=]() -> bool {
         bool success = true;
@@ -45,7 +54,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path);
+            success = exporter.exportAnimation(m_data, path, n);
             break;
         }
         case AnimationType::Eff: {
@@ -53,7 +62,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path, fmt);
+            success = exporter.exportAnimation(m_data, path, fmt, n);
             break;
         }
         case AnimationType::Apng: {
@@ -61,7 +70,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path);
+            success = exporter.exportAnimation(m_data, path, n);
             break;
         }
         default:

@@ -9,6 +9,7 @@
 #include "Formats/Import/RawImporter.h"
 #include "Widgets/spinnerwidget.h"
 #include "Windows/ReduceColors.h"
+#include "Windows/ExportAnimation.h"
 
 #include <QFileDialog>
 #include <QDir>
@@ -109,7 +110,7 @@ AnimStudio::AnimStudio(QWidget* parent)
             ui.actionExport_Current_Frame->setEnabled(true);
             ui.actionExport_Animation->setEnabled(true);
 
-            QString label = getTypeString(type);
+            QString label = getTypeString(type).toUpper();
 
             if (type == AnimationType::Raw || type == AnimationType::Eff) {
                 QString ext = extensionForFormat(imageType).mid(1).toUpper();  // remove dot, make uppercase
@@ -330,65 +331,18 @@ void AnimStudio::on_actionClose_Image_Sequence_triggered()
 
 void AnimStudio::on_actionExport_Animation_triggered()
 {
-    // Let the user pick an output folder
-    QString outDir = QFileDialog::getExistingDirectory(
-        this,
-        "Select Output Folder for Animation",
-        QDir::homePath(),
-        QFileDialog::ShowDirsOnly
-    );
+    ExportAnimationDialog dlg(animCtrl->getBaseName(), this);
+    if (dlg.exec() != QDialog::Accepted)
+        return;
+
+    // Now prompt for output directory
+    QString outDir = QFileDialog::getExistingDirectory(this, "Select Output Folder", QDir::homePath());
     if (outDir.isEmpty())
         return;
 
-    // Ask which animation format to export
-    QStringList formats = { "ani", "eff", "apng" };
-    bool ok = false;
-    QString fmt = QInputDialog::getItem(
-        this,
-        "Choose Export Format",
-        "Format:",
-        formats,
-        0,      // default to first entry
-        false,  // make it non-editable
-        &ok
-    );
-    if (!ok || fmt.isEmpty())
-        return;
+    // Dispatch
+    animCtrl->exportAnimation(outDir, dlg.selectedAnimationType(), dlg.selectedImageFormat(), dlg.chosenBaseName());
 
-    AnimationType type;
-    if (fmt == "ani") {
-        type = AnimationType::Ani;
-    } else if (fmt == "eff") {
-        type = AnimationType::Eff;
-    } else if (fmt == "apng") {
-        type = AnimationType::Apng;
-    } else {
-        QMessageBox::warning(this, "Unsupported Format",
-            "The selected format is not supported for export.");
-        return;
-    }
-
-    // If EFF, pop up a second dialog to pick PNG vs JPG
-    ImageFormat imgFmt = ImageFormat::Png;
-    if (type == AnimationType::Eff) {
-        // get only the image-format extensions, e.g. ["png","jpg", ...]
-        QStringList imgs = availableExtensions();
-
-        QString e = QInputDialog::getItem(
-            this,
-            "Choose Image Format for EFF",
-            "Image Type:",
-            imgs,
-            0,     // default to first
-            false, // non-editable
-            &ok
-        );
-        if (!ok || e.isEmpty()) return;
-        imgFmt = formatFromExtension(e);
-    }
-
-    // Dispatch to controller
-    animCtrl->exportAnimation(outDir, type, imgFmt);
 }
 
 void AnimStudio::on_actionExport_All_Frames_triggered()

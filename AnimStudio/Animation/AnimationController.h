@@ -23,7 +23,7 @@ public:
     void loadApngFile(const QString& path);
 
     // exporting
-    void exportAnimation(const QString& path, AnimationType type, ImageFormat fmt);
+    void exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, QString name);
     void exportAllFrames(const QString& dir, const QString& ext);
     void exportCurrentFrame(const QString& path, const QString& ext);
 
