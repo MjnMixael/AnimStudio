@@ -55,10 +55,14 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             success = exporter.exportAnimation(m_data, path, fmt);
             break;
         }
-        case AnimationType::Apng:
-            // future APNG support
-            success = false;
+        case AnimationType::Apng: {
+            ApngExporter exporter;
+            exporter.setProgressCallback([this](float p) {
+                QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
+                });
+            success = exporter.exportAnimation(m_data, path);
             break;
+        }
         default:
             success = false;
             break;
