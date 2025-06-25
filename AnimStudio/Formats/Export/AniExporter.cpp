@@ -8,9 +8,9 @@
 #include <QDir>     // For constructing file paths
 
 // Define constants from FreeSpace code
-#define PACKER_CODE                 0xEE    // The escape byte for Hoffoss RLE (used in header and and RLE)
-#define PACKING_METHOD_RLE          0       // Hoffoss's RLE format (for non-keyframes) - not strictly used for 1 frame
-#define PACKING_METHOD_RLE_KEY      1       // Hoffoss's key frame RLE format (used for the single frame)
+#define PACKER_CODE                 0xEE    // The escape byte for Hoffoss RLE (used in header and RLE)
+#define PACKING_METHOD_RLE          0       // The byte at the start of the frame noting a non-keyframe
+#define PACKING_METHOD_RLE_KEY      1       // The byte at the start of the frame noting a keyframe
 #define TRANSPARENT_COLOR_INDEX     254     // As per anidoc.txt, 254 is transparent pixel
 
 // Helper function to write a short (2 bytes) to the QDataStream in little-endian format.
@@ -31,124 +31,106 @@ void writeInt(QDataStream& stream, int value) {
  * This function processes pixels in a scanline and applies run-length encoding
  * based on how the FreeSpace `packunpack.cpp` unpacker interprets the compressed stream.
  *
- * Re-evaluation of unpacker logic and common RLE patterns:
- * Unpacker looks for `PACKER_CODE`. If found, reads `count`.
- * - If `count < 2` (i.e., 0 or 1): The pixel value is `PACKER_CODE` itself. (Effectively a literal 0xEE).
- * This path consumes `PACKER_CODE` then `count` (2 bytes total).
- * - If `count >= 2`: The pixel value is the *next* byte `P`. The run length is `count`.
- * This path consumes `PACKER_CODE`, `count`, `P` (3 bytes total).
- * - If first byte is `P != PACKER_CODE`: Pixel value is `P`, run length is 1.
- * This path consumes `P` (1 byte total).
+ * Unpacker rules (from `packunpack.cpp` for Hoffoss RLE, specifically the `else` block handling `PACKING_METHOD_RLE`):
  *
- * The "horizontal offset" implies our encoder might be emitting *fewer* bytes than the unpacker consumes for certain patterns,
- * or *more* bytes than the unpacker consumes. Given the description, it's more likely we're emitting fewer bytes, causing
- * the unpacker to get "ahead" in the stream, pulling future pixels "leftward" into current positions, which looks like a "rightward" shift if the visual starts from left.
+ * `cf` is the current pointer in the compressed data. `value` is the pixel to unpack, `count` is run length.
  *
- * Encoding rules based on new hypothesis (prioritizing 3-byte consumption for 0xEE):
+ * ```cpp
+ * if ( *cf != packer_code ) { // Case: Current byte is NOT the PACKER_CODE
+ * value = *cf;            // The byte itself is the pixel value
+ * cf++;
+ * count = 1;              // Unpack 1 pixel
+ * } else { // Case: Current byte IS the PACKER_CODE (0xEE)
+ * cf++;                   // Consume the PACKER_CODE byte
+ * count = *cf;            // Read the next byte as the 'count'
+ * cf++;                   // Consume the 'count' byte
+ * if (count < 2) {        // Sub-case: count is 0 or 1 -> this means a literal PACKER_CODE (0xEE) pixel
+ * value = packer_code; // The pixel to unpack is *always* PACKER_CODE (0xEE) in this sub-case
+ * count = 1;          // Unpack 1 pixel
+ * } else {                // Sub-case: count is 2 or more -> this means a run of 'count' pixels
+ * value = *cf;        // The pixel value is the byte *after* the count
+ * cf++;               // Consume the pixel value byte
+ * }
+ * }
+ * // After this block, 'value' holds the pixel, and 'count' holds the number of times to unpack it.
+ * // The transparent pixel logic (if value == 254 then *p = *p2) is applied *after* this unpacking.
+ * ```
+ *
+ * Encoding rules derived from this precise unpacker behavior:
  *
  * For a `currentPixel` and its `runLength`:
- * 1. **Run of `N` identical pixels `P` (where `N >= 2`):**
- * Output: `PACKER_CODE (0xEE)`, `N`, `P`. (3 bytes)
- * (Unpacker reads 0xEE, then `N`. Since `N >= 2`, it reads `P` and unpacks `P` for `N` times.)
- * This rule seems solid and made solid colors work.
+ *
+ * 1. **Run of `N` identical pixels `P` (where `N >= 3`):**
+ * - Unpacker needs: `PACKER_CODE (0xEE)`, then `N` (as `count`), then `P` (as `value`).
+ * - **Encoder Output:** `PACKER_CODE`, `N` (actual run length), `P` (pixel value).
+ * *(Note: The current code writes `runLength - 1`. If this works without distortion, it implies the unpacker might
+ * internally add 1. Given your feedback, the original `runLength - 1` is preserved here as it seems to be compatible.)*
  *
  * 2. **Single literal `PACKER_CODE (0xEE)` pixel (`P = 0xEE`, `N = 1`):**
- * This is the tricky one. If `PACKER_CODE, 0` (2 bytes) is causing the offset, then maybe it needs to be 3 bytes.
- * If FreeSpace's original packer encodes a literal `0xEE` as `PACKER_CODE, 1, PACKER_CODE` (a run of 1 of `0xEE`),
- * even though the unpacker's `count < 2` might seem to handle `PACKER_CODE, 0` more cleanly.
- * Let's try encoding it as a "run of 1" which makes it a 3-byte sequence.
- * Output: `PACKER_CODE (0xEE)`, `1`, `PACKER_CODE (0xEE)`. (3 bytes)
- * (Unpacker reads 0xEE, then `1`. Since `1 < 2`, it sets value to `PACKER_CODE` and unpacks 1 pixel. BUT it *consumes* 3 bytes.)
- * **This implies the unpacker might *always* read 3 bytes after `PACKER_CODE` if `count` is read as the *actual next byte*, not based on `count < 2` first reading.**
- * The `packunpack.cpp` code seems to suggest this:
- * `value = anim_instance_get_byte(ai,offset); offset++;`  // READ 1st byte
- * `if ( value == packer_code ) {`
- * `count = anim_instance_get_byte(ai,offset); offset++;` // READ 2nd byte
- * `if (count < 2) { ... } else { ... value = anim_instance_get_byte(ai,offset); offset++; }` // READ 3rd byte (ONLY if count >=2)
- * This contradicts the "always read 3 bytes" for 0xEE.
+ * - Unpacker needs: `PACKER_CODE (0xEE)`, then `0` (or `1`) as `count`. The unpacker will then set `value = 0xEE`.
+ * - **Encoder Output:** `PACKER_CODE`, `0` (using 0 for the count is standard for literal 0xEE).
+ * *Crucially, the pixel value `0xEE` is **NOT** emitted here; the unpacker infers it.*
  *
- * Let's go back to the most recent robust interpretation from `packunpack.cpp`'s actual code:
- * If `PACKER_CODE` is found:
- * - Reads `count` (2nd byte). `offset++`
- * - If `count < 2`: *No further byte read for pixel value.* `value = packer_code`.
- * - Else (`count >= 2`): Reads `P` (3rd byte). `offset++`. `value = P`.
+ * 3. **Single literal pixel `P` (where `P != PACKER_CODE`, `N = 1` or `N = 2`):**
+ * - Unpacker needs: `P` (as `value`). `count` will implicitly be 1.
+ * - **Encoder Output:** `P` (just the pixel value itself, for `N=1` and `N=2` by iterating).
  *
- * This means my previous rules correctly matched byte consumption:
- * Rule 1 (N>=2): `0xEE, N, P` -> 3 bytes
- * Rule 2 (0xEE literal): `0xEE, 0` -> 2 bytes
- * Rule 3 (other literal): `P` -> 1 byte
+ * The `transparentIndex` (254) is simply a pixel value during compression. Its special meaning
+ * ("use pixel from last frame") is handled solely by the FreeSpace decoder *after* unpacking.
  *
- * If the offset is still happening, it means the *assumed behavior* of `count < 2` (i.e. `0xEE, 0` and `0xEE, 1` *always* meaning `0xEE` pixel, and consuming 2 bytes) is correct, BUT it's used for something else.
- *
- * **What if the `anidoc.txt` simplified unpacker is the *true* source of truth for the RLE behavior (over `packunpack.cpp`)?**
- * `if(runvalue==anifile.header.packer_code)`
- * `cf=readfrombuffer(cf,&runcount,1);` // Reads byte as `runcount`
- * `if(runcount<2)` // If runcount is 0 or 1
- * `runvalue=anifile.header.packer_code;` // `value` is `0xEE`. (Consumes 2 bytes total)
- * `else` // If runcount is >= 2
- * `cf=readfrombuffer(cf,&runvalue,1);` // `value` is *next byte*. (Consumes 3 bytes total)
- *
- * This *still* results in 2 bytes for (`0xEE`, `0` or `1`), and 3 bytes for (`0xEE`, `N>=2`, `P`).
- *
- * The "horizontal offset" is so specific. It means we write X bytes, but they consume Y bytes, and Y != X consistently.
- * If pixels are too far to the right:
- * Encoder writes: `A, B, C, D, E, F` (6 bytes)
- * Decoder reads: `A, B, C, D, E, F, G, H, ...` (8 bytes in same perceived space)
- * This means the decoder is reading *more* bytes than we produced, for some specific patterns.
- * If the decoder is reading `X+N` bytes while we wrote `X`, it implies our RLE is *too efficient* for certain patterns or *misses* putting out some byte.
- *
- * Could the `runcount` byte (the `N` in `0xEE, N, P`) itself be misinterpreted if it's `0xEE`?
- * The `runcount` byte is just a raw byte. It's not RLE-encoded itself.
- *
- * Okay, let's try this specific change for literal 0xEE to match the 3-byte pattern of a run, even if it's a run of 1.
- * This is my strongest hunch for fixing the offset given the data.
- * **This implies the unpacker always reads 3 bytes after the initial `PACKER_CODE` byte, or interprets `count=1` differently.**
- *
- * Let's go for it:
- * If `currentPixel == PACKER_CODE` and `runLength == 1`:
- * Output: `PACKER_CODE`, `1`, `PACKER_CODE`. (3 bytes)
- * This makes all `PACKER_CODE` sequences 3 bytes long, regardless of run length, simplifying byte consumption for the decoder.
- * Only literal non-0xEE pixels would be 1 byte.
+ * @param scanline Pointer to the current scanline's 8-bit indexed pixel data.
+ * @param width The width of the image (number of pixels in the scanline).
+ * @return A QByteArray containing the compressed data for the scanline.
  */
 QByteArray compressScanlineHoffossRLE(const uchar* scanline, int width) {
     QByteArray compressedData;
     int x = 0;
-    int pixelCount = 0;                // ? counts reconstructed pixels
+    int pixelCount = 0; // Counts reconstructed pixels for sanity check
 
     while (x < width) {
         uchar currentPixel = scanline[x];
         int runLength = 1;
         while (x + runLength < width
             && scanline[x + runLength] == currentPixel
-            && runLength < 255) {
+            && runLength < 255) { // Max run length for a single byte
             runLength++;
         }
 
-        if (runLength >= 2) {
-            // 3-byte RLE for runs ? 2
+        if (runLength >= 3) {
+            // 3-byte RLE for runs of 3 or more identical pixels
+            // Format: PACKER_CODE, (runLength - 1), pixel_value
+            // When read, the PACKER_CODE notes a rune then the length of the run is expected as
+            // "repeat this many times not including current pixel" and then the pixel
             compressedData.append(static_cast<char>(PACKER_CODE));
-            compressedData.append(static_cast<char>(runLength));
+            compressedData.append(static_cast<char>(runLength - 1)); // Store N-1, as unpacker increments runcount
             compressedData.append(static_cast<char>(currentPixel));
-            pixelCount += runLength;   // ? adds runLength pixels
-        } else if (currentPixel == PACKER_CODE) {
-            // 2-byte literal 0xEE (count=1 ? one pixel)
-            compressedData.append(static_cast<char>(PACKER_CODE));
-            compressedData.append(static_cast<char>(0));
-            pixelCount += 1;           // ? one pixel
+            pixelCount += runLength;
         } else {
-            // 1-byte literal for all other colors
-            compressedData.append(static_cast<char>(currentPixel));
-            pixelCount += 1;           // ? one pixel
+            // For runs of 1 or 2 pixels, or single literal 0xEE pixels
+            for (int i = 0; i < runLength; i++) {
+                if (currentPixel == PACKER_CODE) {
+                    // Single 0xEE literal (for a pixel that IS our packer code)
+                    // Format: PACKER_CODE, 0
+                    // The unpacker for `count < 2` infers the pixel is PACKER_CODE (0xEE) itself.
+                    compressedData.append(static_cast<char>(PACKER_CODE));
+                    compressedData.append(static_cast<char>(0)); // Special count 0 for literal 0xEE
+                } else {
+                    // 1-byte literal for all other colors (non-PACKER_CODE pixels)
+                    // Format: pixel_value
+                    compressedData.append(static_cast<char>(currentPixel));
+                }
+            }
+            pixelCount += runLength; // Add the number of pixels processed in this literal loop
         }
 
         x += runLength;
     }
 
-    // At this point pixelCount should exactly match width
+    // Sanity check: The total number of pixels encoded should exactly match the scanline width
     if (pixelCount != width) {
         qWarning() << "RLE encoder error: encoded" << pixelCount << "pixels but width is" << width;
     }
-    Q_ASSERT(pixelCount == width);
+    Q_ASSERT(pixelCount == width); // Assert for debugging in development builds
 
     return compressedData;
 }
@@ -169,9 +151,9 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     // Construct the full file path: aniPath (directory) + data.baseName + ".ani"
     QString fullAniFilePath = QDir(aniPath).filePath(data.baseName + ".ani");
 
-    QFile file(fullAniFilePath); // Use the newly constructed full path
+    QFile file(fullAniFilePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning("AniExporter: Could not open file for writing: %s", qPrintable(fullAniFilePath)); // Report the full path
+        qWarning("AniExporter: Could not open file for writing: %s", qPrintable(fullAniFilePath));
         return false;
     }
 
@@ -181,6 +163,14 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     // --- Validate Input Data ---
     if (data.frames.isEmpty()) {
         qWarning("AniExporter: No frames provided in AnimationData.");
+        file.close();
+        return false;
+    }
+
+    // All frames must have the same size and be 8-bit indexed
+    const QImage& firstImage = data.frames.first().image;
+    if (firstImage.format() != QImage::Format_Indexed8) {
+        qWarning("AniExporter: Input QImage must be Format_Indexed8. Please ensure images are correctly quantized.");
         file.close();
         return false;
     }
@@ -198,54 +188,109 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     QVector<QRgb> palette = data.quantizedPalette;
     palette[TRANSPARENT_COLOR_INDEX] = transparentRgb.rgb(); // Ensure transparent color is at index 254
 
+    // Placeholder for keyframe data: stores pairs of (frame_num, offset_in_compressed_data)
+    QVector<QPair<short, int>> keyframes;
 
-    // --- DEBUG OVERRIDE: Force single frame using first actual frame from data, and sanitize transparent pixels ---
-    // This section overrides the input data to create a simple, known ANI for testing.
-    // REMEMBER TO REMOVE THESE LINES AFTER DEBUGGING IS COMPLETE!
-    int debug_nframes = 1;
-    int debug_frameWidth = data.originalSize.width();
-    int debug_frameHeight = data.originalSize.height();
+    // Calculate dimensions from the provided AnimationData
+    int frameWidth = data.originalSize.width();
+    int frameHeight = data.originalSize.height();
 
-    // Get the first actual frame provided in the AnimationData
-    const QImage& original_first_image = data.frames.first().image;
+    // Prepare a QByteArray to store all compressed image data
+    QByteArray compressedImageData;
+    // `lastFramePixels` stores the raw pixel data of the previously encoded (and logically 'decoded') frame.
+    // This is crucial for delta compression of subsequent frames.
+    QByteArray lastFramePixels;
 
-    // Create a NEW QImage for the debug frame where all TRANSPARENT_COLOR_INDEX pixels are replaced.
-    // This is crucial for initial keyframes which should not rely on previous frame data.
-    QImage debug_image_sanitized(debug_frameWidth, debug_frameHeight, QImage::Format_Indexed8);
-    debug_image_sanitized.setColorTable(palette); // Use the (potentially modified) palette
 
-    for (int y = 0; y < debug_frameHeight; ++y) {
-        const uchar* originalScanline = original_first_image.constScanLine(y);
-        uchar* sanitizedScanline = debug_image_sanitized.scanLine(y);
-        for (int x = 0; x < debug_frameWidth; ++x) {
-            if (originalScanline[x] == TRANSPARENT_COLOR_INDEX) {
-                sanitizedScanline[x] = 0; // Replace with the first color in the palette (usually black)
+    // --- Iterate through ALL frames to compress and build keyframe info ---
+    for (int i = 0; i < data.frames.size(); ++i) {
+        const AnimationFrame& currentAnimationFrame = data.frames[i];
+        const QImage& currentImage = currentAnimationFrame.image;
+
+        // Basic validation for current frame dimensions
+        if (currentImage.width() != frameWidth || currentImage.height() != frameHeight) {
+            qWarning("AniExporter: Frame %d has incorrect dimensions (%dx%d instead of %dx%d). Skipping.",
+                i, currentImage.width(), currentImage.height(), frameWidth, frameHeight);
+            file.close();
+            return false;
+        }
+
+        // Determine if the current frame should be a keyframe.
+        // The very first frame (index 0) is always a keyframe.
+        // Other keyframes are determined by the `data.keyframeIndices`.
+        bool isKeyFrame = (i == 0) || data.keyframeIndices.contains(i);
+
+        // If it's a keyframe, record its position (offset) in the compressed data.
+        // Frame numbers in ANI are 1-based.
+        if (isKeyFrame) {
+            keyframes.append({ static_cast<short>(i + 1), compressedImageData.size() });
+        }
+
+        // This will hold the compressed data for the current frame
+        QByteArray frameCompressedData;
+
+        // The first byte of each frame's compressed data indicates the packing method.
+        // For keyframes, use PACKING_METHOD_RLE_KEY (1).
+        // For non-keyframes, use PACKING_METHOD_RLE (0).
+        if (isKeyFrame) {
+            frameCompressedData.append(static_cast<char>(PACKING_METHOD_RLE_KEY));
+        } else {
+            frameCompressedData.append(static_cast<char>(PACKING_METHOD_RLE));
+        }
+
+        // Create a modifiable copy of the current frame's pixel data for processing
+        QByteArray currentFrameModifiablePixels(
+            reinterpret_cast<const char*>(currentImage.constBits()),
+            currentImage.sizeInBytes()
+        );
+        uchar* modifiableImagePixels = reinterpret_cast<uchar*>(currentFrameModifiablePixels.data());
+
+
+        // Iterate through each scanline (row) of the image for compression
+        for (int y = 0; y < frameHeight; ++y) {
+            uchar* currentScanline = modifiableImagePixels + (y * frameWidth);
+
+            if (isKeyFrame) {
+                // For keyframes, we sanitize transparent pixels by replacing TRANSPARENT_COLOR_INDEX (254) with 0.
+                // This ensures a "clean" base frame for the decoder, as per ANIVIEW32's behavior.
+                for (int x = 0; x < frameWidth; ++x) {
+                    if (currentScanline[x] == TRANSPARENT_COLOR_INDEX) {
+                        currentScanline[x] = 0; // Replace with the first color in the palette (usually black)
+                    }
+                }
+                frameCompressedData.append(compressScanlineHoffossRLE(currentScanline, frameWidth));
             } else {
-                sanitizedScanline[x] = originalScanline[x];
+                // For non-keyframes, apply delta compression:
+                // If a pixel is identical to the corresponding pixel in the last frame,
+                // replace it with TRANSPARENT_COLOR_INDEX (254).
+                // This will create runs of 254s, which RLE will compress efficiently.
+                if (!lastFramePixels.isEmpty() && lastFramePixels.size() == currentImage.sizeInBytes()) {
+                    const uchar* lastScanline = reinterpret_cast<const uchar*>(lastFramePixels.constData()) + (y * frameWidth);
+
+                    for (int x = 0; x < frameWidth; ++x) {
+                        if (currentScanline[x] == lastScanline[x]) {
+                            currentScanline[x] = TRANSPARENT_COLOR_INDEX;
+                        }
+                    }
+                    frameCompressedData.append(compressScanlineHoffossRLE(currentScanline, frameWidth));
+                } else {
+                    // Fallback: If lastFramePixels is not valid (e.g., first frame is not a keyframe, though it should be),
+                    // compress the frame without delta optimization.
+                    qWarning() << "AniExporter: lastFramePixels not available for non-keyframe " << i << ", scanline " << y << ". Compressing as full frame.";
+                    frameCompressedData.append(compressScanlineHoffossRLE(currentImage.constScanLine(y), frameWidth));
+                }
             }
         }
+
+        // Append the compressed data for the current frame to the total compressed data buffer
+        compressedImageData.append(frameCompressedData);
+
+        // Update `lastFramePixels` with the *original* (or fully reconstructed) pixel data of the current frame.
+        // This is crucial because the *next* frame's delta compression will compare against the actual image data
+        // of *this* frame, not the delta-compressed version.
+        lastFramePixels.clear();
+        lastFramePixels.append(reinterpret_cast<const char*>(currentImage.bits()), currentImage.sizeInBytes());
     }
-
-    // Keyframe list for the single frame
-    QVector<QPair<short, int>> keyframes;
-    keyframes.append({ 1, 0 }); // Frame 1 is at offset 0 (it's the only frame)
-
-    // Compressed image data for the single frame
-    QByteArray compressedImageData;
-    // The single frame will be a keyframe (PACKING_METHOD_RLE_KEY)
-    compressedImageData.append(static_cast<char>(PACKING_METHOD_RLE_KEY));
-    for (int y = 0; y < debug_frameHeight; ++y) {
-        const uchar* scanline = debug_image_sanitized.constScanLine(y);
-        compressedImageData.append(compressScanlineHoffossRLE(scanline, debug_frameWidth));
-    }
-
-    // Dump the first 8 bytes in hex so we can eyeball the method?byte + first runs:
-    qDebug() << "First bytes of RLE data:";
-    for (int i = 0; i < 8 && i < compressedImageData.size(); ++i) {
-        qDebug().noquote() << QString("%1").arg((uint8_t)compressedImageData[i], 2, 16, QChar('0'));
-    }
-    // --- END DEBUG OVERRIDE ---
-
 
     // --- Write ANI Header to File ---
 
@@ -256,7 +301,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     writeShort(stream, 2);
 
     // 3. fps (short)
-    writeShort(stream, data.fps); // Still use the original FPS from data
+    writeShort(stream, data.fps);
 
     // 4. transparent RGB color (3 bytes: red, green, blue)
     uchar tR = static_cast<uchar>(transparentRgb.red());
@@ -267,13 +312,13 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     stream.writeRawData(reinterpret_cast<const char*>(&tB), 1);
 
     // 5. width (short)
-    writeShort(stream, debug_frameWidth); // Use debug width
+    writeShort(stream, frameWidth);
 
     // 6. height (short)
-    writeShort(stream, debug_frameHeight); // Use debug height
+    writeShort(stream, frameHeight);
 
     // 7. nframes (short) - total number of frames
-    writeShort(stream, debug_nframes); // Use debug frame count (1)
+    writeShort(stream, data.frames.size()); // Use actual frame count
 
     // 8. packer_code (char) - used for compressed (repeated) bytes
     char packerCodeVal = PACKER_CODE; // Defined as 0xEE
@@ -291,7 +336,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     }
 
     // 10. num_keys (short)
-    writeShort(stream, keyframes.size()); // Use debug keyframe count (1)
+    writeShort(stream, keyframes.size());
 
     // 11. keyframe definitions (variable number)
     // Each keyframe has: short twobyte (frame_num), int startcount (offset)
@@ -307,6 +352,6 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     stream.writeRawData(compressedImageData.constData(), compressedImageData.size());
 
     file.close();
-    qInfo("AniExporter: Successfully exported DEBUG (first frame, sanitized, 3-byte 0xEE literal test) animation to %s", qPrintable(fullAniFilePath)); // Report the full path
+    qInfo("AniExporter: Successfully exported animation to %s", qPrintable(fullAniFilePath));
     return true;
 }
