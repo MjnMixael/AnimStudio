@@ -48,6 +48,54 @@ QPushButton:pressed {
     stop:0 #333333,
     stop:1 #1E1E1E
   );
+}
+
+/* Disabled QPushButton */
+QPushButton:disabled {
+  background: #1C1C1C;
+  color: #777777;
+  border: 1px solid #444444;
+}
+
+/* QSpinBox text + border */
+QSpinBox {
+  background-color: #2E2E2E;
+  color: #FFFFFF;
+  border: 1px solid #6A6A6A;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+/* Disabled QSpinBox */
+QSpinBox:disabled {
+  background-color: #1C1C1C;
+  color: #777777;
+  border: 1px solid #444444;
+}
+
+/* QComboBox (Dropdown) */
+QComboBox {
+  background-color: #2E2E2E;
+  color: #FFFFFF;
+  border: 1px solid #6A6A6A;
+  border-radius: 4px;
+  padding: 4px 30px 4px 8px; /* space for arrow */
+}
+
+/* Drop-down arrow */
+QComboBox::drop-down {
+  subcontrol-origin: padding;
+  subcontrol-position: top right;
+  width: 24px;
+  border-left: 1px solid #6A6A6A;
+  background-color: #3A3A3A;
+}
+
+/* Arrow icon */
+QComboBox::down-arrow {
+  image: url(:/icons/arrow_down_white.png); /* Optional: use Qt resource or SVG */
+  width: 12px;
+  height: 12px;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">

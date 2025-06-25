@@ -34,6 +34,12 @@ QMenuBar::item:pressed {
   background-color: #4A4A4A;
 }
 
+QStatusBar::item {
+  border: none;        /* no lines */
+  margin: 0px;         /* optionally collapse any extra space */
+  padding: 0px;        /* ditto */
+}
+
 /* Toolbar: match the same bg + no top border */
 QToolBar {
   background-color: #2E2E2E;
@@ -78,10 +84,48 @@ QPushButton:pressed {
   );
 }
 
-QStatusBar::item {
-  border: none;        /* no lines */
-  margin: 0px;         /* optionally collapse any extra space */
-  padding: 0px;        /* ditto */
+QPushButton:disabled {
+  background: #1C1C1C;
+  color: #777777;
+  border: 1px solid #444444;
+}
+
+/* ── QSpinBox ── */
+QSpinBox {
+  background-color: #2E2E2E;
+  color: #FFFFFF;
+  border: 1px solid #6A6A6A;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+QSpinBox:disabled {
+  background-color: #1C1C1C;
+  color: #777777;
+  border: 1px solid #444444;
+}
+
+/* ── QComboBox ── */
+QComboBox {
+  background-color: #2E2E2E;
+  color: #FFFFFF;
+  border: 1px solid #6A6A6A;
+  border-radius: 4px;
+  padding: 4px 30px 4px 8px;
+}
+
+QComboBox::drop-down {
+  subcontrol-origin: padding;
+  subcontrol-position: top right;
+  width: 24px;
+  border-left: 1px solid #6A6A6A;
+  background-color: #3A3A3A;
+}
+
+QComboBox::down-arrow {
+  image: url(:/icons/arrow_down_white.png); /* Optional; or remove for default */
+  width: 12px;
+  height: 12px;
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -125,7 +169,7 @@ QStatusBar::item {
                 <x>0</x>
                 <y>0</y>
                 <width>699</width>
-                <height>387</height>
+                <height>378</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -483,7 +527,7 @@ QStatusBar::item {
      <x>0</x>
      <y>0</y>
      <width>1036</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
