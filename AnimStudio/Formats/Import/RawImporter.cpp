@@ -12,39 +12,93 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
     QDir directory(dir);
     QStringList files = directory.entryList(filters, QDir::Files, QDir::Name);
 
-    if (!files.isEmpty()) {
-        // Use the first file to seed baseName and type
-        QFileInfo firstFi(directory.filePath(files.first()));
-        // Given the “complete” base name (everything before the last dot):
-        QString rawBase = firstFi.completeBaseName();  // e.g. "walk_0001"
-
-        // Remove a trailing “_1234” or “-1234” or just “1234”
-        QString strippedBase = rawBase;
-        strippedBase.replace(
-            QRegularExpression("([_\\-]?\\d+)$"),
-            QString()     // replace with empty
-        );
-        data.baseName = strippedBase; // e.g. "walk"
-        data.type = formatFromExtension(firstFi.suffix());       // e.g. "png"
-    } else {
-        // No files: fall back to directory name
-        data.baseName = QString();
-        data.type = std::nullopt;
+    if (files.isEmpty()) {
+        data.importWarnings << "No files found in directory.";
+        return data;
     }
 
-    data.frameCount = files.size();
-    data.fps = 15; // TODO Default FPS, can be adjusted later
+    QFileInfo firstFi(directory.filePath(files.first()));
+    QString base = firstFi.completeBaseName();
+    QString strippedBase = base;
+    strippedBase.replace(QRegularExpression("([_\\-]?\\d+)$"), QString());
+    QString expectedExt = firstFi.suffix().toLower();
 
-    for (const QString& file : files) {
-        QImage img(dir + "/" + file);
-        if (!img.isNull()) {
-            AnimationFrame frame;
-            frame.image = img;
-            data.frames.append(frame);
-        }
-    }
-
+    data.baseName = strippedBase;
+    data.type = formatFromExtension(expectedExt);
+    data.fps = 15;
     data.animationType = AnimationType::Raw;
 
+    QSet<QString> loadedNames;
+    QMap<int, QString> frameMap;
+    int maxIndex = -1;
+
+    for (const QString& file : files) {
+        QFileInfo fi(file);
+        QString name = fi.completeBaseName();
+        QString ext = fi.suffix().toLower();
+
+        if (ext != expectedExt) {
+            data.importWarnings << "Extension mismatch: " + file;
+        }
+
+        QString temp = name;
+        temp.replace(QRegularExpression("([_\\-]?\\d+)$"), QString());
+        if (temp != strippedBase) {
+            data.importWarnings << "Skipping file with unmatched base: " + file;
+            continue;
+        }
+
+        QRegularExpression re("([_\\-]?)(\\d+)$");
+        auto match = re.match(name);
+        if (!match.hasMatch()) {
+            data.importWarnings << "Skipping file with no frame index: " + file;
+            continue;
+        }
+
+        QString key = match.captured(2);
+
+        if (loadedNames.contains(key)) {
+            data.importWarnings << QString("Skipped duplicate frame #%1 (file \"%2\").").arg(key, file);
+            continue;
+        }
+
+        int frameNum = match.captured(2).toInt();
+        frameMap[frameNum] = file;
+        maxIndex = std::max(maxIndex, frameNum);
+        loadedNames.insert(key);
+    }
+
+    QSize refSize;
+    for (int i = 0; i <= maxIndex; ++i) {
+        if (!frameMap.contains(i)) {
+            QImage blank(refSize.isValid() ? refSize : QSize(1, 1), QImage::Format_RGBA8888);
+            blank.fill(Qt::transparent);
+            data.frames.append({ blank });
+            data.importWarnings << QString("Missing frame #%1 - filled with transparent.").arg(i);
+            continue;
+        }
+
+        QString fullPath = directory.filePath(frameMap[i]);
+        QImage img(fullPath);
+        if (img.isNull()) {
+            data.importWarnings << "Could not load: " + fullPath;
+            data.frames.append({ QImage() });
+            continue;
+        }
+
+        if (!refSize.isValid()) {
+            refSize = img.size();
+        } else if (img.size() != refSize) {
+            data.importWarnings << QString("Resizing frame #%1 from %2x%3 to %4x%5.")
+                .arg(i)
+                .arg(img.width()).arg(img.height())
+                .arg(refSize.width()).arg(refSize.height());
+            img = img.scaled(refSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+        }
+
+        data.frames.append({ img });
+    }
+
+    data.frameCount = data.frames.size();
     return data;
 }

@@ -492,6 +492,12 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     if (hasData) {
         auto data = anim.value();
 
+        if (!data.importWarnings.isEmpty()) {
+            QMessageBox::warning(this, "Import Warnings", data.importWarnings.join("\n"));
+        }
+
+        animCtrl->deleteWarnings();
+
         ui.actionShow_Reduced_Colors->setChecked(data.quantized);
 
         ui.nameEdit->setText(data.baseName);

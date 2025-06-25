@@ -429,6 +429,10 @@ AnimationType AnimationController::getType() const {
     return m_data.animationType;
 }
 
+void AnimationController::deleteWarnings() {
+    m_data.importWarnings.clear();
+}
+
 void AnimationController::clear() {
     pause();
     m_loaded = false;

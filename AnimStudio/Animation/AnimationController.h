@@ -61,6 +61,7 @@ public:
     AnimationType getType() const;
 
     // clean up
+    void deleteWarnings();
     void clear();
 
 signals:

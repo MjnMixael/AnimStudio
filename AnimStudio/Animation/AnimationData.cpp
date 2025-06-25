@@ -4,7 +4,7 @@ QVector<AnimationTypeData> AnimationTypes = {
         { AnimationType::Ani,  true,  "Ani"  },
         { AnimationType::Eff,  true,  "Eff"  },
         { AnimationType::Apng, true,  "Apng" },
-        { AnimationType::Raw,  false, "Sequnce"  },
+        { AnimationType::Raw,  false, "Sequence"  },
 };
 
 QString getTypeString(AnimationType type) {

@@ -4,6 +4,7 @@
 #include "Formats/ImageFormats.h"
 
 #include <QString>
+#include <QStringList>
 #include <QImage>
 #include <QVector>
 #include <QSize>
@@ -47,6 +48,8 @@ struct AnimationData {
     QVector<AnimationFrame> quantizedFrames;
     bool quantized = false;
     QVector<QRgb> quantizedPalette; // if quantized, this holds the palette used
+
+    QStringList importWarnings;
 };
 
 QString getTypeString(AnimationType type);
