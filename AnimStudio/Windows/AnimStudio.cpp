@@ -95,6 +95,37 @@ AnimStudio::AnimStudio(QWidget* parent)
             ui.statusBar->showMessage(success ? "Color reduction complete!" : "Color reduction incomplete.");
         });
 
+    connect(animCtrl, &AnimationController::exportProgress,
+        this, [&](float progress) {
+            int pct = static_cast<int>(progress * 100.0f);
+            ui.statusBar->showMessage(
+                QString("Export Running: %1%").arg(pct)
+            );
+        });
+
+    connect(animCtrl, &AnimationController::exportFinished,
+        this, [&](bool success, AnimationType type, ImageFormat imageType, int frames) {
+            ui.actionExport_All_Frames->setEnabled(true);
+            ui.actionExport_Current_Frame->setEnabled(true);
+            ui.actionExport_Animation->setEnabled(true);
+
+            QString label = getTypeString(type);
+
+            if (type == AnimationType::Raw || type == AnimationType::Eff) {
+                QString ext = extensionForFormat(imageType).mid(1).toUpper();  // remove dot, make uppercase
+                label += QString(" (%1 frame%2, %3)")
+                    .arg(frames)
+                    .arg(frames == 1 ? "" : "s")
+                    .arg(ext);
+            }
+
+            QString message = success
+                ? QString("Export complete: %1.").arg(label)
+                : QString("Export failed: %1.").arg(label);
+
+            ui.statusBar->showMessage(message);
+        });
+
     // Create a permanent label on the right side of the statusbar
     m_rightStatusLabel = new QLabel(this);
     m_rightStatusLabel->setText("Ready");

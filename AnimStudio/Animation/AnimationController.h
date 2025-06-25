@@ -75,6 +75,10 @@ signals:
     void quantizationProgress(int percent);
     // emitted when the quantization is complete (success or failure)
     void quantizationFinished(bool success);
+    // emitted when an export progress is updated
+    void exportProgress(float percent);
+    // emitted when an export finished
+    void exportFinished(bool success, AnimationType type, ImageFormat imageType, int frames);
 
 private slots:
     void advanceFrame();

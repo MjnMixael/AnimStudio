@@ -114,6 +114,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Animation\AnimationController.cpp" />
+    <ClCompile Include="Animation\AnimationData.cpp" />
     <ClCompile Include="Animation\Palette.cpp" />
     <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp" />
     <ClCompile Include="Dependencies\libimagequant\blur.c" />

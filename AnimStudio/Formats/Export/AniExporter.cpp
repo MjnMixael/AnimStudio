@@ -13,6 +13,10 @@
 #define PACKING_METHOD_RLE_KEY      1       // The byte at the start of the frame noting a keyframe
 #define TRANSPARENT_COLOR_INDEX     254     // As per anidoc.txt, 254 is transparent pixel
 
+void AniExporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
 // Helper function to write a short (2 bytes) to the QDataStream in little-endian format.
 // FreeSpace ANI files use little-endian byte order.
 void writeShort(QDataStream& stream, short value) {
@@ -290,6 +294,12 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
         // of *this* frame, not the delta-compressed version.
         lastFramePixels.clear();
         lastFramePixels.append(reinterpret_cast<const char*>(currentImage.bits()), currentImage.sizeInBytes());
+
+        // Emit progress (frame-wise granularity)
+        if (m_progressCallback) {
+            float progress = float(i + 1) / float(data.frames.size());
+            m_progressCallback(progress);
+        }
     }
 
     // --- Write ANI Header to File ---
@@ -353,5 +363,9 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
     file.close();
     qInfo("AniExporter: Successfully exported animation to %s", qPrintable(fullAniFilePath));
+
+    if (m_progressCallback)
+        m_progressCallback(1.0f);
+
     return true;
 }

@@ -40,3 +40,5 @@ struct AnimationData {
     bool quantized = false;
     QVector<QRgb> quantizedPalette; // if quantized, this holds the palette used
 };
+
+QString getTypeString(AnimationType type);

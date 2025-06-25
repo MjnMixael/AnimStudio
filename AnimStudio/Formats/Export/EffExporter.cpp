@@ -5,6 +5,33 @@
 #include <QTextStream>
 #include <QDir>
 
+void EffExporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
+bool writeEffFile(const AnimationData& data,
+    const QString& effPath,
+    ImageFormat fmt)
+{
+    QFile file(effPath);
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+        return false;
+    }
+
+    QTextStream out(&file);
+    // Write type without leading dot, e.g. "png" or "jpg"
+    QString typeStr = extensionForFormat(fmt).mid(1).toLower();
+    out << "$Type: " << typeStr << "\n";
+    out << "$Frames: " << data.frames.size() << "\n";
+    out << "$FPS: " << data.fps << "\n";
+    if (data.loopPoint > 0) {
+        out << "$Keyframe: " << data.loopPoint << "\n";
+    }
+
+    file.close();
+    return true;
+}
+
 bool EffExporter::exportAnimation(const AnimationData& data,
     const QString& outputDir,
     ImageFormat fmt)
@@ -29,8 +56,15 @@ bool EffExporter::exportAnimation(const AnimationData& data,
             .arg(i, padDigits, 10, QChar('0'))
             .arg(extensionForFormat(fmt));
         QString fullPath = QDir(targetDir).filePath(fileName);
-        if (!RawExporter::exportCurrentFrame(data, i, fullPath, fmt)) {
+        RawExporter exporter;
+        if (!exporter.exportCurrentFrame(data, i, fullPath, fmt)) {
             ok = false;
+        }
+
+        // Emit progress (frame-wise granularity)
+        if (m_progressCallback) {
+            float progress = float(i + 1) / float(data.frames.size());
+            m_progressCallback(progress);
         }
     }
 
@@ -39,28 +73,8 @@ bool EffExporter::exportAnimation(const AnimationData& data,
     QString effPath = QDir(targetDir).filePath(effName);
     ok = ok && writeEffFile(data, effPath, fmt);
 
+    if (m_progressCallback)
+        m_progressCallback(1.0f);
+
     return ok;
-}
-
-bool EffExporter::writeEffFile(const AnimationData& data,
-    const QString& effPath,
-    ImageFormat fmt)
-{
-    QFile file(effPath);
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return false;
-    }
-
-    QTextStream out(&file);
-    // Write type without leading dot, e.g. "png" or "jpg"
-    QString typeStr = extensionForFormat(fmt).mid(1).toLower();
-    out << "$Type: " << typeStr << "\n";
-    out << "$Frames: " << data.frames.size() << "\n";
-    out << "$FPS: " << data.fps << "\n";
-    if (data.loopPoint > 0) {
-        out << "$Keyframe: " << data.loopPoint << "\n";
-    }
-
-    file.close();
-    return true;
 }

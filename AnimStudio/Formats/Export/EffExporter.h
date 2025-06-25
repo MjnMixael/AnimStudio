@@ -9,13 +9,11 @@ class EffExporter {
 public:
     // Export the animation frames and write an .eff metadata file to the directory
     // outputDir must exist; returns true only if all images and the .eff file succeed
-    static bool exportAnimation(const AnimationData& data,
-        const QString& outputDir,
-        ImageFormat fmt);
+    bool exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt);
+
+    // Call with values from 0.0 to 1.0 (progress %)
+    void setProgressCallback(std::function<void(float)> cb);
 
 private:
-    // Write the .eff file describing the sequence
-    static bool writeEffFile(const AnimationData& data,
-        const QString& effPath,
-        ImageFormat fmt);
+    std::function<void(float)> m_progressCallback;
 };
