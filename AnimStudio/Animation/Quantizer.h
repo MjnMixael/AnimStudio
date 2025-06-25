@@ -13,6 +13,7 @@ extern "C" {
 
 struct QuantResult {
     QVector<AnimationFrame> frames;
+    QVector<QRgb> palette; // the palette used for quantization
 };
 
 using ProgressFn = std::function<bool(float /*fraction*/)>;

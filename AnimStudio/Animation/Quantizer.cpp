@@ -190,6 +190,8 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         table.append(qRgba(c.r, c.g, c.b, c.a));
     }
 
+    out.palette = table;
+
     // Remap each frame with the same palette
     size_t bufSize = static_cast<size_t>(w) * static_cast<size_t>(h);
     QByteArray buffer(static_cast<int>(bufSize), 0);

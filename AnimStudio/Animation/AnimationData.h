@@ -7,6 +7,7 @@
 #include <QImage>
 #include <QVector>
 #include <QSize>
+#include <QRgb>
 
 #include <optional>
 
@@ -37,4 +38,5 @@ struct AnimationData {
     QVector<AnimationFrame> frames;
     QVector<AnimationFrame> quantizedFrames;
     bool quantized = false;
+    QVector<QRgb> quantizedPalette; // if quantized, this holds the palette used
 };

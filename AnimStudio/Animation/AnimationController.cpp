@@ -34,7 +34,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
     if (!m_loaded) return;
     switch (type) {
         case AnimationType::Ani:
-            //AniExporter::exportAniFile(m_data, path);
+            AniExporter::exportAnimation(m_data, path);
             break;
         case AnimationType::Eff:
             EffExporter::exportAnimation(m_data, path, fmt);
@@ -134,6 +134,11 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
     if (!m_data.keyframeIndices.empty()) {
         m_data.loopPoint = m_data.keyframeIndices[0];
     }
+
+    if (m_data.animationType == AnimationType::Ani) {
+        m_data.quantized = true;
+    }
+
     m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
     m_loaded = true;
     emit animationLoaded();
@@ -290,6 +295,17 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
         } else {
             // commit the quantized frames & switch into quantized mode
             m_data.quantizedFrames = std::move(opt->frames);
+            m_data.quantizedPalette = std::move(opt->palette);
+
+            // pad up to 256 entries with solid green (0,255,0)
+            int cnt = m_data.quantizedPalette.size();
+            if (cnt < 256) {
+                m_data.quantizedPalette.reserve(256);
+                for (int i = cnt; i < 256; ++i) {
+                    m_data.quantizedPalette.append(qRgb(0, 255, 0));
+                }
+            }
+
             m_data.quantized = true;
             m_showQuantized = true;
             emit metadataChanged(m_data);

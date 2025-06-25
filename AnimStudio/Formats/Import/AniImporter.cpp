@@ -75,6 +75,11 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     out.type = std::nullopt;
     out.frameCount = int(nframes);
     out.fps = int(fps);
+
+    // Save the palette
+    out.quantizedPalette.reserve(qtPalette.size());
+    out.quantizedPalette = qtPalette;
+
     for (quint16 k : keys) {
         // ANI stores keyframe numbers 1..N but our frames are 0..N-1
         int idx = (k > 0) ? int(k) - 1 : 0;
