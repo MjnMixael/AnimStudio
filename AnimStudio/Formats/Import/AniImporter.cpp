@@ -1,6 +1,7 @@
 // AniImporter.cpp
 #include "AniImporter.h"
 #include "Animation/AnimationData.h"
+#include "Animation/Palette.h"
 #include <QFile>
 #include <QDataStream>
 #include <QImage>
@@ -79,6 +80,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     // Save the palette
     out.quantizedPalette.reserve(qtPalette.size());
     out.quantizedPalette = qtPalette;
+
+    Palette::padTo256(out.quantizedPalette);
 
     for (quint16 k : keys) {
         // ANI stores keyframe numbers 1..N but our frames are 0..N-1

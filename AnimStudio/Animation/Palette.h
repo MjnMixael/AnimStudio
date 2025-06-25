@@ -12,7 +12,9 @@ namespace Palette {
         JascPal,
         GimpGpl,
         AdobeAct,
+        AdobeAse,
         RiffPal,
+        PaintNetTxt,
         Unknown
     };
 
@@ -28,8 +30,10 @@ namespace Palette {
     bool loadGimpPal(const QString& fileName, QVector<QRgb>& out);
     bool loadAdobeAct(const QString& fileName, QVector<QRgb>& out);
     bool loadRiffPal(const QString& fileName, QVector<QRgb>& out);
+    bool loadAdobeAse(const QString& fileName, QVector<QRgb>& out);
+    bool loadPaintNet(const QString& fileName, QVector<QRgb>& out);
 
     bool loadPaletteAuto(const QString& fileName, QVector<QRgb>& out); // Detect + Load
 
-    void padTo256(QVector<QRgb>& palette, QRgb filler = qRgba(0, 255, 0, 255));
+    void padTo256(QVector<QRgb>& palette);
 }

@@ -1,5 +1,6 @@
 ﻿#include "AnimationController.h"
 #include "BuiltInPalettes.h"
+#include "Palette.h"
 #include <QtConcurrent>
 #include <QFutureWatcher>
 #include "Formats/Import/RawImporter.h"
@@ -345,14 +346,7 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
             m_data.quantizedFrames = std::move(opt->frames);
             m_data.quantizedPalette = std::move(opt->palette);
 
-            // pad up to 256 entries with solid green (0,255,0)
-            int cnt = m_data.quantizedPalette.size();
-            if (cnt < 256) {
-                m_data.quantizedPalette.reserve(256);
-                for (int i = cnt; i < 256; ++i) {
-                    m_data.quantizedPalette.append(qRgb(0, 255, 0));
-                }
-            }
+            Palette::padTo256(m_data.quantizedPalette);
 
             m_data.quantized = true;
             m_showQuantized = true;
