@@ -18,6 +18,7 @@ public:
     QVector<QRgb> selectedPalette() const;
     int getQuality() const;
     int getMaxColors() const;
+    bool useTransparencyOverride() const;
 
 signals:
     /// Emitted when the user confirms reduction.

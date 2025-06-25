@@ -12,6 +12,8 @@
 
 #include <optional>
 
+#define TRANSPARENT_COLOR_INDEX     255     // As per ani documentation, 255 is transparent pixel
+
 enum class AnimationType {
     Eff,
     Ani,

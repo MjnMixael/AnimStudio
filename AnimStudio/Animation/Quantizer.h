@@ -28,6 +28,8 @@ public:
     Quantizer& setDitheringLevel(float dither);
     /// Set absolute max colors (ignored if customPalette has size)
     Quantizer& setMaxColors(int maxColors);
+    /// Set transparency setting (ignored if automatic palette)
+    Quantizer& setEnforcedTransparency(bool enforceTransparency);
     /// Supply a fixed palette to seed quantization
     Quantizer& setCustomPalette(const QVector<QRgb>& palette);
 
@@ -55,6 +57,7 @@ private:
     int           qualityMax_ = 100;
     float         ditheringLevel_ = 0.0f;
     int           maxColors_ = 256;
+    bool          enforceTransparency_ = true;
     QVector<QRgb> customPalette_;
 
     std::atomic<bool> cancelRequested_{ false };

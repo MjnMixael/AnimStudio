@@ -11,7 +11,7 @@
 #define PACKER_CODE                 0xEE    // The escape byte for Hoffoss RLE (used in header and RLE)
 #define PACKING_METHOD_RLE          0       // The byte at the start of the frame noting a non-keyframe
 #define PACKING_METHOD_RLE_KEY      1       // The byte at the start of the frame noting a keyframe
-#define TRANSPARENT_COLOR_INDEX     254     // As per anidoc.txt, 254 is transparent pixel
+#define FRAME_HOLDOVER_COLOR_INDEX     254     // As per ani documentation, 254 is holdover from last frame
 
 void AniExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
@@ -165,14 +165,14 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     stream.setByteOrder(QDataStream::LittleEndian); // FreeSpace uses little-endian byte order
 
     // --- Validate Input Data ---
-    if (data.frames.isEmpty()) {
+    if (data.quantizedFrames.isEmpty()) {
         qWarning("AniExporter: No frames provided in AnimationData.");
         file.close();
         return false;
     }
 
     // All frames must have the same size and be 8-bit indexed
-    const QImage& firstImage = data.frames.first().image;
+    const QImage& firstImage = data.quantizedFrames.first().image;
     if (firstImage.format() != QImage::Format_Indexed8) {
         qWarning("AniExporter: Input QImage must be Format_Indexed8. Please ensure images are correctly quantized.");
         file.close();
@@ -190,7 +190,6 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     QColor transparentRgb(0, 255, 0); // FreeSpace traditionally uses RGB(0, 255, 0) for transparency
 
     QVector<QRgb> palette = data.quantizedPalette;
-    palette[TRANSPARENT_COLOR_INDEX] = transparentRgb.rgb(); // Ensure transparent color is at index 254
 
     // Placeholder for keyframe data: stores pairs of (frame_num, offset_in_compressed_data)
     QVector<QPair<short, int>> keyframes;
@@ -205,10 +204,14 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     // This is crucial for delta compression of subsequent frames.
     QByteArray lastFramePixels;
 
+    // If we have transparency then make it bright green
+    if (qAlpha(palette[255]) == 0) {
+        palette[255] = transparentRgb.rgb();
+    }
 
     // --- Iterate through ALL frames to compress and build keyframe info ---
-    for (int i = 0; i < data.frames.size(); ++i) {
-        const AnimationFrame& currentAnimationFrame = data.frames[i];
+    for (int i = 0; i < data.quantizedFrames.size(); ++i) {
+        const AnimationFrame& currentAnimationFrame = data.quantizedFrames[i];
         const QImage& currentImage = currentAnimationFrame.image;
 
         // Basic validation for current frame dimensions
@@ -255,10 +258,10 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
             uchar* currentScanline = modifiableImagePixels + (y * frameWidth);
 
             if (isKeyFrame) {
-                // For keyframes, we sanitize transparent pixels by replacing TRANSPARENT_COLOR_INDEX (254) with 0.
+                // For keyframes, we sanitize transparent pixels by replacing FRAME_HOLDOVER_COLOR_INDEX (254) with 0.
                 // This ensures a "clean" base frame for the decoder, as per ANIVIEW32's behavior.
                 for (int x = 0; x < frameWidth; ++x) {
-                    if (currentScanline[x] == TRANSPARENT_COLOR_INDEX) {
+                    if (currentScanline[x] == FRAME_HOLDOVER_COLOR_INDEX) {
                         currentScanline[x] = 0; // Replace with the first color in the palette (usually black)
                     }
                 }
@@ -266,14 +269,14 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
             } else {
                 // For non-keyframes, apply delta compression:
                 // If a pixel is identical to the corresponding pixel in the last frame,
-                // replace it with TRANSPARENT_COLOR_INDEX (254).
+                // replace it with FRAME_HOLDOVER_COLOR_INDEX (254).
                 // This will create runs of 254s, which RLE will compress efficiently.
                 if (!lastFramePixels.isEmpty() && lastFramePixels.size() == currentImage.sizeInBytes()) {
                     const uchar* lastScanline = reinterpret_cast<const uchar*>(lastFramePixels.constData()) + (y * frameWidth);
 
                     for (int x = 0; x < frameWidth; ++x) {
                         if (currentScanline[x] == lastScanline[x]) {
-                            currentScanline[x] = TRANSPARENT_COLOR_INDEX;
+                            currentScanline[x] = FRAME_HOLDOVER_COLOR_INDEX;
                         }
                     }
                     frameCompressedData.append(compressScanlineHoffossRLE(currentScanline, frameWidth));
@@ -297,7 +300,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
         // Emit progress (frame-wise granularity)
         if (m_progressCallback) {
-            float progress = float(i + 1) / float(data.frames.size());
+            float progress = float(i + 1) / float(data.quantizedFrames.size());
             m_progressCallback(progress);
         }
     }
@@ -328,7 +331,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     writeShort(stream, frameHeight);
 
     // 7. nframes (short) - total number of frames
-    writeShort(stream, data.frames.size()); // Use actual frame count
+    writeShort(stream, data.frameCount); // Use actual frame count
 
     // 8. packer_code (char) - used for compressed (repeated) bytes
     char packerCodeVal = PACKER_CODE; // Defined as 0xEE

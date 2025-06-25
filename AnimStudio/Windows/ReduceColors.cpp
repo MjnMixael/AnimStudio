@@ -41,6 +41,10 @@ ReduceColorsDialog::ReduceColorsDialog(const AnimationController* animCtrl, QWid
         [this](int idx) {
             ui->maxColorsSpinBox->setEnabled(idx == 0);
             ui->previewPaletteButton->setEnabled(idx != 0);
+            ui->transparencyCheckBox->setEnabled(idx != 0);
+            if (idx == 0) {
+                ui->transparencyCheckBox->setChecked(true);
+            }
         });
 
     connect(ui->importPaletteButton, &QPushButton::clicked, this, &ReduceColorsDialog::onImportPalette);
@@ -180,6 +184,10 @@ int ReduceColorsDialog::getMaxColors() const {
         return selectedPalette().size();
     }
     return ui->maxColorsSpinBox->value();
+}
+
+bool ReduceColorsDialog::useTransparencyOverride() const {
+    return ui->transparencyCheckBox->isChecked();
 }
 
 ReduceColorsDialog::~ReduceColorsDialog()

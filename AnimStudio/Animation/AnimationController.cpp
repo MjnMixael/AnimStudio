@@ -195,6 +195,7 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
 
     if (m_data.animationType == AnimationType::Ani) {
         m_data.quantized = true;
+        m_data.quantizedFrames = m_data.frames;
     }
 
     m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
@@ -298,7 +299,7 @@ bool AnimationController::getAllKeyframesActive() const {
     return m_data.keyframeIndices.size() == m_data.frames.size();
 }
 
-void AnimationController::quantize(const QVector<QRgb>& palette, const int quality, const int maxColors) {
+void AnimationController::quantize(const QVector<QRgb>& palette, const int quality, const int maxColors, const bool enforceTransparency) {
     // reset any previous quantized data
     m_data.quantizedFrames = m_data.frames;
     m_data.quantized = false;
@@ -307,7 +308,7 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
     QVector<AnimationFrame> framesCopy = m_data.frames;
 
     // 1) Launch async quantization with progress callback
-    auto future = QtConcurrent::run([this, framesCopy, palette, quality, maxColors]() -> std::optional<QuantResult> {
+    auto future = QtConcurrent::run([this, framesCopy, palette, quality, maxColors, enforceTransparency]() -> std::optional<QuantResult> {
         m_quantizer.reset();
 
         // Build and configure our Quantizer
@@ -321,6 +322,8 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
             m_quantizer.setMaxColors(maxColors);
         }
         // TODO dithering?
+
+        m_quantizer.setEnforcedTransparency(enforceTransparency);
 
         // Run the quantization
         return m_quantizer.quantize(

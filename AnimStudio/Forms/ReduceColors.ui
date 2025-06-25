@@ -114,6 +114,22 @@ QComboBox::drop-down:disabled {
 /* Optional: grayed-out arrow icon for disabled combo boxes */
 QComboBox::down-arrow:disabled {
   image: url(:/icons/arrow_down_gray.png); /* or omit for no arrow */
+}
+
+/* Normal checkbox */
+QCheckBox {
+  spacing: 6px;
+  color: #FFFFFF;
+}
+
+/* Disabled checkbox */
+QCheckBox:disabled {
+  color: #777777;
+}
+
+QCheckBox::indicator {
+  width: 16px;
+  height: 16px;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -198,6 +214,20 @@ ANIs always use a 256-color table—pick “Automatic” for best fit or choose 
           </size>
          </property>
         </spacer>
+       </item>
+       <item row="4" column="0">
+        <widget class="QLabel" name="transparencyLabel">
+         <property name="text">
+          <string>Transparency</string>
+         </property>
+        </widget>
+       </item>
+       <item row="4" column="1">
+        <widget class="QCheckBox" name="transparencyCheckBox">
+         <property name="checked">
+          <bool>true</bool>
+         </property>
+        </widget>
        </item>
       </layout>
      </item>

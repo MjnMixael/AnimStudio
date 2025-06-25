@@ -432,7 +432,7 @@ void AnimStudio::on_actionReduce_Colors_triggered()
             ui.actionShow_Reduced_Colors->setEnabled(false);
 
             // pull the user’s choice from the dialog
-            animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors());
+            animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors(), dlg.useTransparencyOverride());
         });
     dlg.exec();
 }
@@ -445,6 +445,15 @@ void AnimStudio::on_actionShow_Reduced_Colors_toggled(bool checked)
 void AnimStudio::on_actionCancel_Reduce_Colors_triggered()
 {
     animCtrl->cancelQuantization();
+}
+
+void AnimStudio::on_actionToggle_Transparency_toggled(bool checked)
+{
+    if (checked) {
+        ui.previewLabel->setStyleSheet("QLabel { background-color: rgb(0,255,0); }");
+    } else {
+        ui.previewLabel->setStyleSheet("");  // resets to inherited default
+    }
 }
 
 void AnimStudio::resizeEvent(QResizeEvent* event)

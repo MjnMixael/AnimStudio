@@ -44,7 +44,7 @@ public:
     bool getAllKeyframesActive() const;
 
     // quantization
-    void quantize(const QVector<QRgb>& palette, const int quality, const int maxColors);
+    void quantize(const QVector<QRgb>& palette, const int quality, const int maxColors, const bool enforceTransparency);
     void cancelQuantization();
     void toggleShowQuantized(bool show);
     bool isShowingQuantized() const;

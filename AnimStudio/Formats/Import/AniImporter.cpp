@@ -44,6 +44,26 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
         qtPalette.append(qRgb(pr, pg, pb));
     }
 
+    int transparentIndex = -1;
+    for (int i = 0; i < qtPalette.size(); ++i) {
+        QRgb color = qtPalette[i];
+        if (qRed(color) == rgbR &&
+            qGreen(color) == rgbG &&
+            qBlue(color) == rgbB) {
+            transparentIndex = i;
+            break;
+        }
+    }
+
+    if (transparentIndex >= 0 && transparentIndex < qtPalette.size()) {
+        qtPalette[transparentIndex] = qRgba(rgbR, rgbG, rgbB, 0); // force alpha=0
+    }
+
+    // Ensure the transparent pixel is at the end for easy export later
+    if (transparentIndex >= 0 && transparentIndex != 255) {
+        qSwap(qtPalette[transparentIndex], qtPalette[255]);
+    }
+
     // 3) Read keyframe info
     quint16 numKeys;
     ds >> numKeys;
@@ -148,6 +168,24 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
         af.index = i;
         af.filename = QStringLiteral("%1_frame%2").arg(out.baseName).arg(i);
         out.frames.append(std::move(af));
+    }
+
+    // Remap images to the correct palette indicies if we swapped the transparent index
+    if (transparentIndex >= 0 && transparentIndex != 255) {
+        for (auto& frame : out.frames) {
+            QImage& img = frame.image;
+
+            if (img.format() == QImage::Format_Indexed8) {
+                uchar* bits = img.bits();
+                const int numPixels = img.width() * img.height();
+                for (int i = 0; i < numPixels; ++i) {
+                    if (bits[i] == transparentIndex)
+                        bits[i] = 255;
+                    else if (bits[i] == 255)
+                        bits[i] = transparentIndex;
+                }
+            }
+        }
     }
 
     return out;

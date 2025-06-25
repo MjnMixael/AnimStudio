@@ -144,6 +144,22 @@ QComboBox::drop-down:disabled {
 /* Optional: grayed-out arrow icon for disabled combo boxes */
 QComboBox::down-arrow:disabled {
   image: url(:/icons/arrow_down_gray.png); /* or omit for no arrow */
+}
+
+/* Normal checkbox */
+QCheckBox {
+  spacing: 6px;
+  color: #FFFFFF;
+}
+
+/* Disabled checkbox */
+QCheckBox:disabled {
+  color: #777777;
+}
+
+QCheckBox::indicator {
+  width: 16px;
+  height: 16px;
 }</string>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -619,6 +635,8 @@ QComboBox::down-arrow:disabled {
    <addaction name="actionReduce_Colors"/>
    <addaction name="actionShow_Reduced_Colors"/>
    <addaction name="actionCancel_Reduce_Colors"/>
+   <addaction name="separator"/>
+   <addaction name="actionToggle_Transparency"/>
   </widget>
   <action name="actionOpenImageSequence">
    <property name="icon">
@@ -711,6 +729,22 @@ QComboBox::down-arrow:disabled {
    </property>
    <property name="toolTip">
     <string>Cancel reduce colors</string>
+   </property>
+  </action>
+  <action name="actionToggle_Transparency">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/transparent_on.png</normaloff>
+     <normalon>:/AnimStudio/Resources/transparent_off.png</normalon>:/AnimStudio/Resources/transparent_on.png</iconset>
+   </property>
+   <property name="text">
+    <string>Toggle Transparency</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle transparency</string>
    </property>
   </action>
  </widget>

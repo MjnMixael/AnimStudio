@@ -28,6 +28,11 @@ Quantizer& Quantizer::setMaxColors(int maxColors) {
     return *this;
 }
 
+Quantizer& Quantizer::setEnforcedTransparency(bool enforceTransparency) {
+    enforceTransparency_ = enforceTransparency;
+    return *this;
+}
+
 Quantizer& Quantizer::setCustomPalette(const QVector<QRgb>& palette) {
     customPalette_ = palette;
     return *this;
@@ -115,6 +120,10 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
                 static_cast<unsigned char>(qBlue(qc)),
                 static_cast<unsigned char>(qAlpha(qc))
             };
+
+            if (colorCount == 255 && enforceTransparency_) {
+                col.a = 0;
+            }
             
             entries.push_back({ col, 1u }); // count=1.0f
 

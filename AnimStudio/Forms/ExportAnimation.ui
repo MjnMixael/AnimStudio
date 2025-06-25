@@ -114,6 +114,22 @@ QComboBox::drop-down:disabled {
 /* Optional: grayed-out arrow icon for disabled combo boxes */
 QComboBox::down-arrow:disabled {
   image: url(:/icons/arrow_down_gray.png); /* or omit for no arrow */
+}
+
+/* Normal checkbox */
+QCheckBox {
+  spacing: 6px;
+  color: #FFFFFF;
+}
+
+/* Disabled checkbox */
+QCheckBox:disabled {
+  color: #777777;
+}
+
+QCheckBox::indicator {
+  width: 16px;
+  height: 16px;
 }</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">

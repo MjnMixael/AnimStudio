@@ -45,7 +45,7 @@ private slots:
     void on_actionReduce_Colors_triggered();
     void on_actionShow_Reduced_Colors_toggled(bool checked);
     void on_actionCancel_Reduce_Colors_triggered();
-
+    void on_actionToggle_Transparency_toggled(bool checked);
     
     // Animation Control
     void on_playPauseButton_clicked();
