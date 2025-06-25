@@ -387,6 +387,14 @@ bool AnimationController::isQuantizeRunning() const {
     return m_quantizer.isRunning();
 }
 
+bool AnimationController::isQuantized() const {
+    return m_data.quantized;
+}
+
+const QVector<QRgb>* AnimationController::getCurrentPalette() const {
+    return m_data.quantized ? &m_data.quantizedPalette : nullptr;
+}
+
 void AnimationController::setBaseName(const QString & name) {
     m_data.baseName = name;
     emit metadataChanged(m_data);
@@ -406,6 +414,10 @@ int AnimationController::getFrameCount() const {
 
 int AnimationController::getFPS() const {
     return m_data.fps;
+}
+
+AnimationType AnimationController::getType() const {
+    return m_data.animationType;
 }
 
 void AnimationController::clear() {

@@ -49,6 +49,8 @@ public:
     void toggleShowQuantized(bool show);
     bool isShowingQuantized() const;
     bool isQuantizeRunning() const;
+    bool isQuantized() const;
+    const QVector<QRgb>* getCurrentPalette() const;
 
     // metadata
     void setBaseName(const QString& name);
@@ -56,6 +58,7 @@ public:
     QSize getResolution() const;
     int getFrameCount() const;
     int getFPS() const;
+    AnimationType getType() const;
 
     // clean up
     void clear();

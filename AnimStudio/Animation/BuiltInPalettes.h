@@ -1,6 +1,17 @@
 #pragma once
 
 #include <QRgb>
+#include <QString>
+#include <QVector>
+
+struct BuiltInPalette {
+    QString name;
+    QVector<QRgb> colors;
+};
+
+const QVector<BuiltInPalette>& getBuiltInPalettes();
+
+const int getNumBuiltInPalettes();
 
 // shield palette (256 entries)
 static constexpr QRgb ShieldPalette[256] = {

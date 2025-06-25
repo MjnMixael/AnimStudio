@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>477</width>
-    <height>265</height>
+    <width>558</width>
+    <height>349</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -134,6 +134,24 @@ ANIs always use a 256-color table—pick “Automatic” for best fit or choose 
         </spacer>
        </item>
       </layout>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout">
+     <item>
+      <widget class="QPushButton" name="importPaletteButton">
+       <property name="text">
+        <string>Import Palette...</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="previewPaletteButton">
+       <property name="text">
+        <string>Preview Palette</string>
+       </property>
+      </widget>
      </item>
     </layout>
    </item>

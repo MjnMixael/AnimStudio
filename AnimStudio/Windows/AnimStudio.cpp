@@ -464,7 +464,7 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
 
 void AnimStudio::on_actionReduce_Colors_triggered()
 {
-    ReduceColorsDialog dlg(this);
+    ReduceColorsDialog dlg(animCtrl, this);
     // whenever user confirms, grab the palette and call quantize(palette)
     connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
         this, [&dlg, this]() {

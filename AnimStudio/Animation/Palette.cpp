@@ -12,12 +12,27 @@ namespace Palette {
         { PaletteFormat::RiffPal, "RIFF Palette", {"pal"} },
         { PaletteFormat::GimpGpl, "GIMP Palette", {"gpl"} },
         { PaletteFormat::AdobeAct, "Adobe ACT Palette", {"act"} },
-        { PaletteFormat::AdobeAse, "Adobe ASE Palette", {"ase"} },
         { PaletteFormat::PaintNetTxt, "Paint.NET Palette", {"txt"} },
     };
 
     const QList<PaletteFormatInfo>& getSupportedFormats() {
         return supportedFormats;
+    }
+
+    QVector<UserPalette> userPalettes;
+
+    void addUserPalette(const QString& name, const QVector<QRgb>& colors) {
+        for (auto& pal : userPalettes) {
+            if (pal.name == name) {
+                pal.colors = colors;
+                return;
+            }
+        }
+        userPalettes.append({ name, colors });
+    }
+
+    void clearUserPalettes() {
+        userPalettes.clear();
     }
 
     static PaletteFormat detectFormat(const QString& fileName) {
@@ -167,71 +182,6 @@ namespace Palette {
         return !out.isEmpty();
     }
 
-    // --- Adobe .ase format ---
-    bool loadAdobeAse(const QString& fileName, QVector<QRgb>& out)
-    {
-        QFile f(fileName);
-        if (!f.open(QIODevice::ReadOnly)) {
-            qWarning() << "loadAdobeAse: failed to open" << fileName;
-            return false;
-        }
-
-        QDataStream in(&f);
-        in.setByteOrder(QDataStream::BigEndian);
-
-        quint32 signature;
-        in >> signature;
-        if (signature != 0x41534546) { // 'ASEF'
-            qWarning() << "loadAdobeAse: not an ASE file";
-            return false;
-        }
-
-        quint16 versionMajor, versionMinor;
-        in >> versionMajor >> versionMinor;
-
-        quint32 blockCount;
-        in >> blockCount;
-
-        out.clear();
-
-        for (quint32 i = 0; i < blockCount && !in.atEnd(); ++i) {
-            quint16 blockType;
-            quint32 blockLength;
-            in >> blockType >> blockLength;
-
-            if (blockType == 0x0001) { // Color entry
-                // Read name (UTF-16, length-prefixed)
-                quint16 nameLength;
-                in >> nameLength;
-                for (int j = 0; j < nameLength; ++j) {
-                    quint16 dummy;
-                    in >> dummy; // skip name
-                }
-
-                char model[4];
-                in.readRawData(model, 4);
-
-                if (qstrncmp(model, "RGB ", 4) == 0) {
-                    float r, g, b;
-                    in >> r >> g >> b;
-                    in.skipRawData(2); // Color type (2 bytes)
-                    out.append(qRgba(
-                        qBound(0, int(r * 255.0f), 255),
-                        qBound(0, int(g * 255.0f), 255),
-                        qBound(0, int(b * 255.0f), 255),
-                        255
-                    ));
-                } else {
-                    in.skipRawData(blockLength - 4); // Skip unsupported color
-                }
-            } else {
-                in.skipRawData(blockLength); // skip unknown block
-            }
-        }
-
-        return !out.isEmpty();
-    }
-
     // --- Paint.net .txt format ---
     bool loadPaintNet(const QString& fileName, QVector<QRgb>& out)
     {
@@ -287,9 +237,6 @@ namespace Palette {
             break;
         case PaletteFormat::AdobeAct:
             success = loadAdobeAct(fileName, out);
-            break;
-        case PaletteFormat::AdobeAse:
-            success = loadAdobeAse(fileName, out);
             break;
         case PaletteFormat::PaintNetTxt:
             success = loadPaintNet(fileName, out);
