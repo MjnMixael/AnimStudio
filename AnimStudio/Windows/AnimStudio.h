@@ -28,7 +28,7 @@ public:
     AnimStudio(QWidget* parent = nullptr);
     ~AnimStudio();
 
-    static constexpr char const* Version = "0.8.0";
+    static constexpr char const* Version = "0.8.5";
 
 protected:
     void resizeEvent(QResizeEvent* event) override;
