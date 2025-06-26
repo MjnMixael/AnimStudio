@@ -7,6 +7,11 @@
 
 class AniImporter {
 public:
-    static std::optional<AnimationData> importFromFile(const QString& aniPath);
-    //static QFuture<std::optional<AnimationData>> importFromFileAsync(const QString& aniPath);
+    std::optional<AnimationData> importFromFile(const QString& aniPath);
+    
+    // Call with values from 0.0 to 1.0 (progress %)
+    void setProgressCallback(std::function<void(float)> cb);
+
+private:
+    std::function<void(float)> m_progressCallback;
 };

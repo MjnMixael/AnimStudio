@@ -8,6 +8,12 @@
 
 class EffImporter {
 public:
-    static std::optional<AnimationData> importFromFile(const QString& effPath);
-    static QFuture<std::optional<AnimationData>> importFromFileAsync(const QString& effPath); // NEW
+    std::optional<AnimationData> importFromFile(const QString& effPath);
+
+    // Call with values from 0.0 to 1.0 (progress %)
+    void setProgressCallback(std::function<void(float)> cb);
+
+private:
+    std::function<void(float)> m_progressCallback;
+    std::optional<AnimationData> parseEff(const QString& effPath);
 };

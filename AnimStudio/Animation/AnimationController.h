@@ -83,6 +83,10 @@ signals:
     void exportProgress(float percent);
     // emitted when an export finished
     void exportFinished(bool success, AnimationType type, ImageFormat imageType, int frames);
+    // emitted when an import progress is updated
+    void importProgress(float percent);
+    // emitted when an import finished
+    void importFinished(bool success, AnimationType type, ImageFormat imageType, int frames);
 
 private slots:
     void advanceFrame();

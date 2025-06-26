@@ -94,14 +94,10 @@ AnimStudio::AnimStudio(QWidget* parent)
 
     connect(animCtrl, &AnimationController::quantizationFinished,
         this, [&](bool success) {
-            ui.actionReduce_Colors->setEnabled(true);
             ui.actionCancel_Reduce_Colors->setEnabled(false);
             ui.statusBar->showMessage(success ? "Color reduction complete!" : "Color reduction incomplete.");
-
-            // re-enable export buttons
-            ui.actionExport_Animation->setEnabled(true);
-            ui.actionExport_All_Frames->setEnabled(true);
-            ui.actionExport_Current_Frame->setEnabled(true);
+            m_taskRunning = false;
+            toggleToolebarControls();
         });
 
     connect(animCtrl, &AnimationController::exportProgress,
@@ -114,9 +110,8 @@ AnimStudio::AnimStudio(QWidget* parent)
 
     connect(animCtrl, &AnimationController::exportFinished,
         this, [&](bool success, AnimationType type, ImageFormat imageType, int frames) {
-            ui.actionExport_All_Frames->setEnabled(true);
-            ui.actionExport_Current_Frame->setEnabled(true);
-            ui.actionExport_Animation->setEnabled(true);
+            m_taskRunning = false;
+            toggleToolebarControls();
 
             QString label = getTypeString(type).toUpper();
 
@@ -131,6 +126,36 @@ AnimStudio::AnimStudio(QWidget* parent)
             QString message = success
                 ? QString("Export complete: %1.").arg(label)
                 : QString("Export failed: %1.").arg(label);
+
+            ui.statusBar->showMessage(message);
+        });
+
+    connect(animCtrl, &AnimationController::importProgress,
+        this, [&](float progress) {
+            int pct = static_cast<int>(progress * 100.0f);
+            ui.statusBar->showMessage(
+                QString("Import Running: %1%").arg(pct)
+            );
+        });
+
+    connect(animCtrl, &AnimationController::importFinished,
+        this, [&](bool success, AnimationType type, ImageFormat imageType, int frames) {
+            m_taskRunning = false;
+            toggleToolebarControls();
+
+            QString label = getTypeString(type).toUpper();
+
+            if (type == AnimationType::Raw || type == AnimationType::Eff) {
+                QString ext = extensionForFormat(imageType).mid(1).toUpper();  // remove dot, make uppercase
+                label += QString(" (%1 frame%2, %3)")
+                    .arg(frames)
+                    .arg(frames == 1 ? "" : "s")
+                    .arg(ext);
+            }
+
+            QString message = success
+                ? QString("Import complete: %1.").arg(label)
+                : QString("Import failed: %1.").arg(label);
 
             ui.statusBar->showMessage(message);
         });
@@ -174,6 +199,18 @@ void AnimStudio::deleteSpinner() {
         spinner->deleteLater();
         spinner = nullptr;
     }
+}
+
+void AnimStudio::toggleToolebarControls() {
+    bool toggle = !m_taskRunning;
+    bool loaded = animCtrl->isLoaded();
+
+    ui.actionReduce_Colors->setEnabled(toggle && loaded);
+    ui.actionExport_All_Frames->setEnabled(toggle && loaded);
+    ui.actionExport_Current_Frame->setEnabled(toggle && loaded);
+    ui.actionExport_Animation->setEnabled(toggle && loaded);
+    ui.actionImport_Animation->setEnabled(toggle);
+    ui.actionOpenImageSequence->setEnabled(toggle);
 }
 
 void AnimStudio::on_playPauseButton_clicked() {
@@ -308,6 +345,9 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
     if (dir.isEmpty())
         return;
 
+    m_taskRunning = true;
+    toggleToolebarControls();
+
     // hide the old preview and show spinner while loading
     ui.previewLabel->hide();
     resetInterface();
@@ -326,6 +366,9 @@ void AnimStudio::on_actionImport_Animation_triggered()
     );
     if (filePath.isEmpty())
         return;
+
+    m_taskRunning = true;
+    toggleToolebarControls();
 
     // show spinner while loading
     ui.previewLabel->hide();
@@ -368,6 +411,14 @@ void AnimStudio::on_actionExport_Animation_triggered()
     if (outDir.isEmpty())
         return;
 
+    m_taskRunning = true;
+    toggleToolebarControls();
+
+    if (dlg.selectedAnimationType() == AnimationType::Ani && !animCtrl->isQuantized()) {
+        QMessageBox::critical(this, "Cannot Export", "Reduce colors before exporting as ANI format!");
+        return;
+    }
+
     // Dispatch
     animCtrl->exportAnimation(outDir, dlg.selectedAnimationType(), dlg.selectedImageFormat(), dlg.chosenBaseName());
 
@@ -399,6 +450,9 @@ void AnimStudio::on_actionExport_All_Frames_triggered()
     );
     if (!ok || ext.isEmpty())
         return;
+
+    m_taskRunning = true;
+    toggleToolebarControls();
 
     // Dispatch directory + extension to your controller
     animCtrl->exportAllFrames(folder, ext);
@@ -439,6 +493,9 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
     QFileInfo info(filePath);
     QString ext = info.suffix().toLower();
 
+    m_taskRunning = true;
+    toggleToolebarControls();
+
     // dispatch to controller – make sure your controller method
     // signature matches: (const QString&, Format)
     animCtrl->exportCurrentFrame(filePath, ext);
@@ -451,19 +508,15 @@ void AnimStudio::on_actionReduce_Colors_triggered()
     // whenever user confirms, grab the palette and call quantize(palette)
     connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
         this, [&dlg, this]() {
+            m_taskRunning = true;
+            toggleToolebarControls();
             // enable the cancel button
-            ui.actionReduce_Colors->setEnabled(false);
             ui.actionCancel_Reduce_Colors->setEnabled(true);
 
             // show non quantized and disable the toggle button
             animCtrl->toggleShowQuantized(false);
             ui.actionShow_Reduced_Colors->setChecked(false);
             ui.actionShow_Reduced_Colors->setEnabled(false);
-
-            // disable export buttons
-            ui.actionExport_Animation->setEnabled(false);
-            ui.actionExport_All_Frames->setEnabled(false);
-            ui.actionExport_Current_Frame->setEnabled(false);
 
             // pull the user’s choice from the dialog
             animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors(), dlg.useTransparencyOverride());
@@ -575,10 +628,7 @@ void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
     ui.timelineSlider->setEnabled(hasData);
 
     // Toolbar buttons
-    ui.actionExport_Animation->setEnabled(hasData);
-    ui.actionExport_All_Frames->setEnabled(hasData);
-    ui.actionExport_Current_Frame->setEnabled(hasData);
-    ui.actionReduce_Colors->setEnabled(hasData && !animCtrl->isQuantizeRunning());
+    toggleToolebarControls();
     ui.actionShow_Reduced_Colors->setEnabled(hasData && anim.value().quantized);
     ui.actionCancel_Reduce_Colors->setEnabled(hasData && animCtrl->isQuantizeRunning());
 

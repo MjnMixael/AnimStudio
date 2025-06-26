@@ -14,10 +14,16 @@ static int paddedRowSize(int width) {
     return width + pad;
 }
 
+void AniImporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
 std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath) {
     QFile f(aniPath);
     if (!f.open(QIODevice::ReadOnly))
         return std::nullopt;
+
+    if (m_progressCallback) m_progressCallback(0.0f);
 
     QDataStream ds(&f);
     ds.setByteOrder(QDataStream::LittleEndian);
@@ -35,6 +41,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     if (shouldBeZero != 0 || version < 2 || nframes == 0)
         return std::nullopt;  // invalid ANI
 
+    if (m_progressCallback) m_progressCallback(0.05f);
+
     // 2) Read 256-entry palette :contentReference[oaicite:1]{index=1}
     QVector<QRgb> qtPalette;
     qtPalette.reserve(256);
@@ -43,6 +51,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
         ds >> pr >> pg >> pb;
         qtPalette.append(qRgb(pr, pg, pb));
     }
+
+    if (m_progressCallback) m_progressCallback(0.1f);
 
     int transparentIndex = -1;
     for (int i = 0; i < qtPalette.size(); ++i) {
@@ -64,6 +74,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
         qSwap(qtPalette[transparentIndex], qtPalette[255]);
     }
 
+    if (m_progressCallback) m_progressCallback(0.15f);
+
     // 3) Read keyframe info
     quint16 numKeys;
     ds >> numKeys;
@@ -78,6 +90,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     // skip endcount
     quint32 endcount;
     ds >> endcount;
+
+    if (m_progressCallback) m_progressCallback(0.2f);
 
     // Prepare buffers
     int rowStride = paddedRowSize(w);
@@ -168,6 +182,13 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
         af.index = i;
         af.filename = QStringLiteral("%1_frame%2").arg(out.baseName).arg(i);
         out.frames.append(std::move(af));
+
+        // report 20 -> 100% over the load loop
+        if (m_progressCallback) {
+            float frac = float(i + 1) / float(nframes);
+            float p = 0.2f + frac * 1.0f;
+            m_progressCallback(p);
+        }
     }
 
     // Remap images to the correct palette indicies if we swapped the transparent index
@@ -187,6 +208,8 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
             }
         }
     }
+
+    if (m_progressCallback) m_progressCallback(1.0f);
 
     return out;
 }

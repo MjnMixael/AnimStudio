@@ -9,10 +9,16 @@
 #include <QRegularExpression>
 #include <QtConcurrent/QtConcurrent>
 
-static std::optional<AnimationData> parseEff(const QString& effPath) {
+void EffImporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
+std::optional<AnimationData> EffImporter::parseEff(const QString& effPath) {
     QFile file(effPath);
     if (!file.open(QIODevice::ReadOnly | QIODevice::Text))
         return std::nullopt;
+
+    if (m_progressCallback) m_progressCallback(0.0f);
 
     QTextStream in(&file);
     AnimationData data;
@@ -48,7 +54,14 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
         if (frame.isNull()) return std::nullopt;
 
         data.frames.append(AnimationFrame{ frame, i, frameName });
+
+        // report 0 -> 100% over the load loop
+        if (m_progressCallback) {
+            m_progressCallback(float(i + 1) / float(data.frameCount));
+        }
     }
+
+    if (m_progressCallback) m_progressCallback(1.0f);
 
     data.animationType = AnimationType::Eff;
 
@@ -57,8 +70,4 @@ static std::optional<AnimationData> parseEff(const QString& effPath) {
 
 std::optional<AnimationData> EffImporter::importFromFile(const QString& effPath) {
     return parseEff(effPath);
-}
-
-QFuture<std::optional<AnimationData>> EffImporter::importFromFileAsync(const QString& effPath) {
-    return QtConcurrent::run(parseEff, effPath);
 }

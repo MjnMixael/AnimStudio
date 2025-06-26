@@ -156,23 +156,67 @@ void AnimationController::beginLoad(AnimationType type, const QString& path) {
     m_currentIndex = 0;
     QFuture<std::optional<AnimationData>> future;
     switch (type) {
-    case AnimationType::Raw:
-        // RawImporter.importBlocking returns AnimationData, so wrap it
-        future = QtConcurrent::run([=]() {
-            AnimationData d = RawImporter::importBlocking(path);
-            return d.frameCount > 0 ? std::make_optional(d) : std::nullopt;
-            });
-        break;
-    case AnimationType::Ani:
-        future = QtConcurrent::run(AniImporter::importFromFile, path);
-        break;
-    case AnimationType::Eff:
-        future = QtConcurrent::run(EffImporter::importFromFile, path);
-        break;
-    case AnimationType::Apng:
-        future = QtConcurrent::run(ApngImporter::importFromFile, path);
-        break;
+        case AnimationType::Raw: {
+            future = QtConcurrent::run([=]() -> std::optional<AnimationData> {
+                RawImporter importer;
+                importer.setProgressCallback([this](float p) {
+                    QMetaObject::invokeMethod(
+                        this, "importProgress",
+                        Qt::QueuedConnection,
+                        Q_ARG(float, p)
+                    );
+                    });
+                AnimationData d = importer.importBlocking(path);
+                return d.frameCount > 0 ? std::make_optional(d) : std::nullopt;
+                });
+            break;
+        }
+        case AnimationType::Ani: {
+            future = QtConcurrent::run([=]() -> std::optional<AnimationData> {
+                AniImporter importer;
+                importer.setProgressCallback([this](float p) {
+                    QMetaObject::invokeMethod(
+                        this, "importProgress",
+                        Qt::QueuedConnection,
+                        Q_ARG(float, p)
+                    );
+                    });
+                return importer.importFromFile(path);
+                });
+            break;
+        }
+        case AnimationType::Eff: {
+            future = QtConcurrent::run([=]() -> std::optional<AnimationData> {
+                EffImporter importer;
+                importer.setProgressCallback([this](float p) {
+                    QMetaObject::invokeMethod(
+                        this, "importProgress",
+                        Qt::QueuedConnection,
+                        Q_ARG(float, p)
+                    );
+                    });
+                return importer.importFromFile(path);
+                });
+            break;
+        }
+        case AnimationType::Apng: {
+            future = QtConcurrent::run([=]() -> std::optional<AnimationData> {
+                ApngImporter importer;
+                importer.setProgressCallback([this](float p) {
+                    QMetaObject::invokeMethod(
+                        this, "importProgress",
+                        Qt::QueuedConnection,
+                        Q_ARG(float, p)
+                    );
+                    });
+                return importer.importFromFile(path);
+                });
+            break;
+        }
+        default:
+            return emit errorOccurred("Import Failed", "Unknown animation type.");
     }
+
     auto* watcher = new QFutureWatcher<std::optional<AnimationData>>(this);
     connect(watcher, &QFutureWatcher<std::optional<AnimationData>>::finished, this, [=]() {
         auto result = watcher->result();
@@ -202,6 +246,7 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
 
     m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
     m_loaded = true;
+    emit importFinished(true, m_data.animationType, m_data.type.has_value() ? m_data.type.value() : ImageFormat::Png, m_data.frameCount);
     emit animationLoaded();
     emit metadataChanged(m_data);
     // immediately show first frame

@@ -6,6 +6,10 @@
 #include <QRegularExpression>
 #include <algorithm>
 
+void RawImporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
 AnimationData RawImporter::importBlocking(const QString& dir) {
     AnimationData data;
     QStringList filters = availableFilters();
@@ -16,6 +20,8 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
         data.importWarnings << "No files found in directory.";
         return data;
     }
+
+    if (m_progressCallback) m_progressCallback(0.0f);
 
     QFileInfo firstFi(directory.filePath(files.first()));
     QString base = firstFi.completeBaseName();
@@ -32,6 +38,7 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
     QMap<int, QString> frameMap;
     int maxIndex = -1;
 
+    int count = 0;
     for (const QString& file : files) {
         QFileInfo fi(file);
         QString name = fi.completeBaseName();
@@ -66,6 +73,12 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
         frameMap[frameNum] = file;
         maxIndex = std::max(maxIndex, frameNum);
         loadedNames.insert(key);
+
+        // Emit progress 0 - 25
+        if (m_progressCallback) {
+            float frac = float(++count) / float(files.size());
+            m_progressCallback(frac * 0.25f);
+        }
     }
 
     QSize refSize;
@@ -97,7 +110,16 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
         }
 
         data.frames.append({ img });
+
+        // Emit progress 0 - 25
+        if (m_progressCallback) {
+            int frameCount = maxIndex + 1;
+            float frac = float(i + 1) / float(frameCount);
+            m_progressCallback(0.25f + frac * 0.75f);
+        }
     }
+
+    if (m_progressCallback) { m_progressCallback(1); }
 
     data.frameCount = data.frames.size();
     return data;

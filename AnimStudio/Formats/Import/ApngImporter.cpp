@@ -5,14 +5,21 @@
 #include <QImage>
 #include <QDebug>
 
+void ApngImporter::setProgressCallback(std::function<void(float)> cb) {
+    m_progressCallback = std::move(cb);
+}
+
 std::optional<AnimationData> ApngImporter::importFromFile(const QString& path) {
+    if (m_progressCallback) m_progressCallback(0.0f);
     try {
         std::vector<Image> frames;
         if (!path.isEmpty()) {
             // Convert QString to a wide?string buffer
             std::wstring wpath = path.toStdWString();
             // load_apng will expect a mutable wchar_t*, so we take &wpath[0]
+            if (m_progressCallback) m_progressCallback(0.05f);
             int result = load_apng(&wpath[0], frames);
+            if (m_progressCallback) m_progressCallback(0.35f);
             if (result < 0) {
                 throw std::runtime_error("Failed to load APNG file: " + path.toStdString());
             }
@@ -41,6 +48,8 @@ std::optional<AnimationData> ApngImporter::importFromFile(const QString& path) {
         for (size_t i = 1; i < frames.size(); ++i) {
             baseDen = lcm(baseDen, int(frames[i].delay_den));
         }
+
+        if (m_progressCallback) m_progressCallback(0.4f);
 
         // 3) fps = baseDen (i.e. tick = 1/baseDen seconds)
         out.fps = baseDen;
@@ -76,10 +85,19 @@ std::optional<AnimationData> ApngImporter::importFromFile(const QString& path) {
 
             // free the loader’s buffers
             f.free();
+
+            // report 40 -> 100% over the load loop
+            if (m_progressCallback) {
+                float frac = float(i + 1) / float(frames.size());
+                float p = 0.4f + frac * 1.0f;
+                m_progressCallback(p);
+            }
         }
 
         // 5) Update frameCount
         out.frameCount = out.frames.size();
+
+        if (m_progressCallback) m_progressCallback(1.0f);
 
         return out;
     }

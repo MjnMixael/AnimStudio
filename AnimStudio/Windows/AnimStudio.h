@@ -75,6 +75,7 @@ private:
     QLabel* m_rightStatusLabel;
     QTimer* m_memTimer;
     bool m_autoResize = true;
+    bool m_taskRunning = false;
 
     enum class BackgroundMode { Checker, SolidGreen, None };
 
@@ -92,6 +93,8 @@ private:
     void adjustPreviewSize();
 
     void updateFrameTimeDisplay();
+
+    void toggleToolebarControls();
 
     // Show memory usage
     qint64 currentMemoryBytes();
