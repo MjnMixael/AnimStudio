@@ -24,6 +24,7 @@
 #include <QFile>
 #include <QInputDialog>
 #include <QPainter>
+#include <QImageReader>
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <psapi.h>
@@ -155,7 +156,7 @@ AnimStudio::AnimStudio(QWidget* parent)
 
             QString message = success
                 ? QString("Import complete: %1.").arg(label)
-                : QString("Import failed: %1.").arg(label);
+                : QString("Import failed");
 
             ui.statusBar->showMessage(message);
         });
@@ -176,6 +177,8 @@ AnimStudio::AnimStudio(QWidget* parent)
     setBackgroundMode(m_bgMode);
 
     ui.statusBar->showMessage("Ready!");
+
+    qDebug() << QImageReader::supportedImageFormats();
 }
 
 AnimStudio::~AnimStudio()

@@ -228,6 +228,7 @@ void AnimationController::beginLoad(AnimationType type, const QString& path) {
 
 void AnimationController::finishLoad(const std::optional<AnimationData>& data, const QString& error) {
     if (!data) {
+        emit importFinished(false, AnimationType::Ani, ImageFormat::Png, 0);
         emit errorOccurred("Import Failed", error);
         return;
     }
