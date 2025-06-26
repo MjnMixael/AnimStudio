@@ -245,6 +245,13 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
         m_data.loopPoint = std::min(m_data.loopPoint + 1, m_data.frameCount - 1);
     }
 
+    // Convert original frames to ARGB32 so they're not left as Indexed8
+    for (AnimationFrame& f : m_data.frames) {
+        if (f.image.format() != QImage::Format_ARGB32) {
+            f.image = f.image.convertToFormat(QImage::Format_ARGB32);
+        }
+    }
+
     m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
     m_loaded = true;
     emit importFinished(true, m_data.animationType, m_data.type.has_value() ? m_data.type.value() : ImageFormat::Png, m_data.frameCount);
