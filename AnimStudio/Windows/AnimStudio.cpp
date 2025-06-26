@@ -275,6 +275,22 @@ void AnimStudio::on_actionExit_triggered()
     close();
 }
 
+void AnimStudio::on_actionAbout_triggered() {
+    // Build the about text
+    QString aboutText = QString(
+        "<b>AnimStudio %1</b><br><br>"
+        "AnimStudio is free and open-source software.<br><br>"
+        "<b>Dependencies:</b><br>"
+        "- libpng<br>"
+        "- zlib<br>"
+        "- libimagequant (v2.x)<br>"
+        "- apngdisassembler"
+    ).arg(Version);
+
+    // Show standard About dialog
+    QMessageBox::about(this, "About AnimStudio", aboutText);
+}
+
 void AnimStudio::on_actionOpenImageSequence_triggered()
 {
     QString dir = QFileDialog::getExistingDirectory(this, "Select Image Sequence Directory");

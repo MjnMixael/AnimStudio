@@ -28,12 +28,15 @@ public:
     AnimStudio(QWidget* parent = nullptr);
     ~AnimStudio();
 
+    static constexpr char const* Version = "0.8.0";
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
 
 private slots:
     // Menu Handlers
     void on_actionExit_triggered();
+    void on_actionAbout_triggered();
 
     // Toolbar Handlers
     void on_actionOpenImageSequence_triggered();
