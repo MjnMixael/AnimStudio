@@ -196,6 +196,8 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
     if (m_data.animationType == AnimationType::Ani) {
         m_data.quantized = true;
         m_data.quantizedFrames = m_data.frames;
+        // ANI loop keyframe is the LAST frame of the non loop vs the first frame of the loop. Wierd, but that’s how it is.
+        m_data.loopPoint = std::min(m_data.loopPoint + 1, m_data.frameCount - 1);
     }
 
     m_data.totalLength = float(m_data.frameCount - 1) / m_data.fps;
@@ -225,8 +227,8 @@ void AnimationController::advanceFrame() {
 
     // 2) if we've gone off the end, wrap to keyframe or 0
     if (next >= frames.size()) {
-        if (!m_data.keyframeIndices.empty()) {
-            next = m_data.keyframeIndices.front();
+        if (m_data.usingLoopPoint) {
+            next = m_data.loopPoint;
         } else {
             next = 0;
         }
@@ -273,9 +275,12 @@ bool AnimationController::isPlaying() const {
 }
 
 void AnimationController::setLoopPoint(int frame) {
+    m_data.usingLoopPoint = false; // reset to false, we will set it to true if frame > 0
     if (frame >= 0 && frame < m_data.frameCount) {
-        m_data.keyframeIndices = { frame }; // Update the vector for the exporter
         m_data.loopPoint = frame; // Store this specific int for easy access
+        if (frame > 0) {
+            m_data.usingLoopPoint = true;
+        }
         emit metadataChanged(m_data);
     }
 }
@@ -289,8 +294,9 @@ void AnimationController::setAllKeyframesActive(bool all) {
     if (all) {
         m_data.keyframeIndices.resize(m_data.frameCount);
         std::iota(m_data.keyframeIndices.begin(), m_data.keyframeIndices.end(), 0);
+        m_data.usingLoopPoint = false;
     } else {
-        m_data.keyframeIndices.push_back(m_data.loopPoint);
+        m_data.usingLoopPoint = true;
     }
     emit metadataChanged(m_data);
 }

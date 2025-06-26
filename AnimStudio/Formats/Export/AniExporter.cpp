@@ -209,6 +209,14 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
         palette[255] = transparentRgb.rgb();
     }
 
+    // Convert our loop point to the proper keyframe for ANI
+    QVector<int> keyframeIndices = data.keyframeIndices;
+    if (data.usingLoopPoint) {
+        keyframeIndices.clear();
+        keyframeIndices.append(data.loopPoint - 1);
+        keyframeIndices.append(0); // Always include the first frame as a keyframe
+    }
+
     // --- Iterate through ALL frames to compress and build keyframe info ---
     for (int i = 0; i < data.quantizedFrames.size(); ++i) {
         const AnimationFrame& currentAnimationFrame = data.quantizedFrames[i];
@@ -224,8 +232,8 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
         // Determine if the current frame should be a keyframe.
         // The very first frame (index 0) is always a keyframe.
-        // Other keyframes are determined by the `data.keyframeIndices`.
-        bool isKeyFrame = (i == 0) || data.keyframeIndices.contains(i);
+        // Other keyframes are determined by the `keyframeIndices`.
+        bool isKeyFrame = (i == 0) || keyframeIndices.contains(i);
 
         // If it's a keyframe, record its position (offset) in the compressed data.
         // Frame numbers in ANI are 1-based.
