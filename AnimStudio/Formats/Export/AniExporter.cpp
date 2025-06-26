@@ -100,7 +100,7 @@ QByteArray compressScanlineHoffossRLE(const uchar* scanline, int width) {
             runLength++;
         }
 
-        if (runLength >= 3) {
+        if (runLength > 2) {
             // 3-byte RLE for runs of 3 or more identical pixels
             // Format: PACKER_CODE, (runLength - 1), pixel_value
             // When read, the PACKER_CODE notes a rune then the length of the run is expected as
@@ -254,8 +254,9 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
 
         // Iterate through each scanline (row) of the image for compression
+        int stride = currentImage.bytesPerLine();
         for (int y = 0; y < frameHeight; ++y) {
-            uchar* currentScanline = modifiableImagePixels + (y * frameWidth);
+            uchar* currentScanline = modifiableImagePixels + (y * stride);
 
             if (isKeyFrame) {
                 // For keyframes, we sanitize transparent pixels by replacing FRAME_HOLDOVER_COLOR_INDEX (254) with 0.
@@ -272,7 +273,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
                 // replace it with FRAME_HOLDOVER_COLOR_INDEX (254).
                 // This will create runs of 254s, which RLE will compress efficiently.
                 if (!lastFramePixels.isEmpty() && lastFramePixels.size() == currentImage.sizeInBytes()) {
-                    const uchar* lastScanline = reinterpret_cast<const uchar*>(lastFramePixels.constData()) + (y * frameWidth);
+                    const uchar* lastScanline = reinterpret_cast<const uchar*>(lastFramePixels.constData()) + (y * stride);
 
                     for (int x = 0; x < frameWidth; ++x) {
                         if (currentScanline[x] == lastScanline[x]) {
