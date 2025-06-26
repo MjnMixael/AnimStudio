@@ -359,6 +359,7 @@ void AnimStudio::on_actionClose_Image_Sequence_triggered()
 void AnimStudio::on_actionExport_Animation_triggered()
 {
     ExportAnimationDialog dlg(animCtrl->getBaseName(), this);
+    dlg.setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     if (dlg.exec() != QDialog::Accepted)
         return;
 
@@ -446,6 +447,7 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
 void AnimStudio::on_actionReduce_Colors_triggered()
 {
     ReduceColorsDialog dlg(animCtrl, this);
+    dlg.setWindowFlags(windowFlags() & ~Qt::WindowContextHelpButtonHint);
     // whenever user confirms, grab the palette and call quantize(palette)
     connect(&dlg, &ReduceColorsDialog::reduceConfirmed,
         this, [&dlg, this]() {
