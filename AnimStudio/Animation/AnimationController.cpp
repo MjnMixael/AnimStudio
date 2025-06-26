@@ -242,7 +242,10 @@ void AnimationController::finishLoad(const std::optional<AnimationData>& data, c
         m_data.quantized = true;
         m_data.quantizedFrames = m_data.frames;
         // ANI loop keyframe is the LAST frame of the non loop vs the first frame of the loop. Wierd, but that’s how it is.
-        m_data.loopPoint = std::min(m_data.loopPoint + 1, m_data.frameCount - 1);
+        // Unless it's frame 0...
+        if (m_data.loopPoint > 0) {
+            m_data.loopPoint = std::min(m_data.loopPoint + 1, m_data.frameCount - 1);
+        }
     }
 
     // Convert original frames to ARGB32 so they're not left as Indexed8

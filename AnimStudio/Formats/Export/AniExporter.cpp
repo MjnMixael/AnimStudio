@@ -211,7 +211,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
     // Convert our loop point to the proper keyframe for ANI
     QVector<int> keyframeIndices = data.keyframeIndices;
-    if (data.usingLoopPoint) {
+    if (data.usingLoopPoint && data.loopPoint > 0) {
         keyframeIndices.clear();
         keyframeIndices.append(data.loopPoint - 1);
         keyframeIndices.append(0); // Always include the first frame as a keyframe
