@@ -48,7 +48,7 @@ private slots:
     void on_actionReduce_Colors_triggered();
     void on_actionShow_Reduced_Colors_toggled(bool checked);
     void on_actionCancel_Reduce_Colors_triggered();
-    void on_actionToggle_Transparency_toggled(bool checked);
+    void on_actionCycle_Transparency_Mode_triggered();
     
     // Animation Control
     void on_playPauseButton_clicked();
@@ -74,7 +74,13 @@ private:
     QLabel* m_rightStatusLabel;
     QTimer* m_memTimer;
 
-    void updateMetadata(std::optional<AnimationData> data);   
+    enum class BackgroundMode { Checker, SolidGreen, None };
+
+    BackgroundMode m_bgMode = BackgroundMode::None;
+
+    void updateMetadata(std::optional<AnimationData> data);
+
+    void setBackgroundMode(BackgroundMode);
 
     void resetInterface();
 

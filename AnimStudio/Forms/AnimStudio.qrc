@@ -1,7 +1,9 @@
 <RCC>
   <qresource prefix="AnimStudio">
-    <file>Resources/transparent_off.png</file>
-    <file>Resources/transparent_on.png</file>
+    <file>Resources/checked_bg_tile.png</file>
+    <file>Resources/transparent_grey.png</file>
+    <file>Resources/transparent_green.png</file>
+    <file>Resources/transparent_checked.png</file>
     <file>Resources/cancel.png</file>
     <file>Resources/frame_forward.png</file>
     <file>Resources/frame_reverse.png</file>

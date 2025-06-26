@@ -203,7 +203,7 @@ QCheckBox::indicator {
                 <x>0</x>
                 <y>0</y>
                 <width>699</width>
-                <height>387</height>
+                <height>378</height>
                </rect>
               </property>
               <layout class="QGridLayout" name="gridLayout">
@@ -561,7 +561,7 @@ QCheckBox::indicator {
      <x>0</x>
      <y>0</y>
      <width>1036</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -637,7 +637,7 @@ QCheckBox::indicator {
    <addaction name="actionShow_Reduced_Colors"/>
    <addaction name="actionCancel_Reduce_Colors"/>
    <addaction name="separator"/>
-   <addaction name="actionToggle_Transparency"/>
+   <addaction name="actionCycle_Transparency_Mode"/>
   </widget>
   <action name="actionOpenImageSequence">
    <property name="icon">
@@ -732,20 +732,17 @@ QCheckBox::indicator {
     <string>Cancel reduce colors</string>
    </property>
   </action>
-  <action name="actionToggle_Transparency">
-   <property name="checkable">
-    <bool>true</bool>
-   </property>
+  <action name="actionCycle_Transparency_Mode">
    <property name="icon">
     <iconset resource="AnimStudio.qrc">
-     <normaloff>:/AnimStudio/Resources/transparent_on.png</normaloff>
-     <normalon>:/AnimStudio/Resources/transparent_off.png</normalon>:/AnimStudio/Resources/transparent_on.png</iconset>
+     <normaloff>:/AnimStudio/Resources/transparent_grey.png</normaloff>
+     <normalon>:/AnimStudio/Resources/transparent_off.png</normalon>:/AnimStudio/Resources/transparent_grey.png</iconset>
    </property>
    <property name="text">
-    <string>Toggle Transparency</string>
+    <string>Cycle Transparency Mode</string>
    </property>
    <property name="toolTip">
-    <string>Toggle transparency</string>
+    <string>Cycle transparency mode</string>
    </property>
   </action>
   <action name="actionAbout">

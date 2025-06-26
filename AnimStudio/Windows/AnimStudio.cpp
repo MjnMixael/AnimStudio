@@ -23,6 +23,7 @@
 #include <QFormLayout>
 #include <QFile>
 #include <QInputDialog>
+#include <QPainter>
 #ifdef Q_OS_WIN
 #  include <windows.h>
 #  include <psapi.h>
@@ -144,6 +145,8 @@ AnimStudio::AnimStudio(QWidget* parent)
     updateMemoryUsage();
 
     updateMetadata(std::nullopt);
+
+    setBackgroundMode(m_bgMode);
 
     ui.statusBar->showMessage("Ready!");
 }
@@ -474,12 +477,54 @@ void AnimStudio::on_actionCancel_Reduce_Colors_triggered()
     animCtrl->cancelQuantization();
 }
 
-void AnimStudio::on_actionToggle_Transparency_toggled(bool checked)
+void AnimStudio::on_actionCycle_Transparency_Mode_triggered()
 {
-    if (checked) {
-        ui.previewLabel->setStyleSheet("QLabel { background-color: rgb(0,255,0); }");
+    // advance 0->1->2->0
+    m_bgMode = static_cast<BackgroundMode>((int(m_bgMode) + 1) % 3);
+    setBackgroundMode(m_bgMode);
+}
+
+void AnimStudio::setBackgroundMode(BackgroundMode mode) {
+    QWidget* vp;
+
+    // true uses entire scroll area, false just animation area
+    if (false) {
+        vp = ui.playerScrollArea->viewport();
+
+        ui.previewLabel->setStyleSheet(
+            "border: 1px solid rgba(0,0,0,0.5);"
+        );
     } else {
-        ui.previewLabel->setStyleSheet("");  // resets to inherited default
+        vp = ui.previewLabel;
+    }
+
+    
+
+    switch (mode) {
+    case BackgroundMode::Checker:
+        ui.actionCycle_Transparency_Mode->setIcon(QIcon(":/AnimStudio/Resources/transparent_checked.png"));
+        ui.actionCycle_Transparency_Mode->setToolTip("Background: Checkerboard");
+        {
+            vp->setAutoFillBackground(false);
+            vp->setStyleSheet(R"(
+                border-image: url(:/AnimStudio/Resources/checked_bg_tile.png) 0 0 0 0 repeat;
+            )");
+        }
+        break;
+
+    case BackgroundMode::SolidGreen:
+        ui.actionCycle_Transparency_Mode->setIcon(QIcon(":/AnimStudio/Resources/transparent_green.png"));
+        ui.actionCycle_Transparency_Mode->setToolTip("Background: Solid Green");
+        vp->setAutoFillBackground(false);
+        vp->setStyleSheet("background-color: rgb(0,255,0);");
+        break;
+
+    case BackgroundMode::None:
+        ui.actionCycle_Transparency_Mode->setIcon(QIcon(":/AnimStudio/Resources/transparent_grey.png"));
+        ui.actionCycle_Transparency_Mode->setToolTip("Background: None");
+        vp->setAutoFillBackground(false);
+        vp->setStyleSheet("");
+        break;
     }
 }
 
