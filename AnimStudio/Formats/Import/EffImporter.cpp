@@ -7,7 +7,7 @@
 #include <QDir>
 #include <QImageReader>
 #include <QRegularExpression>
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
 
 static std::optional<AnimationData> parseEff(const QString& effPath) {
     QFile file(effPath);

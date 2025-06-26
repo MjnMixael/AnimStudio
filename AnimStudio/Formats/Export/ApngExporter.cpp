@@ -188,7 +188,7 @@ namespace { // Anonymous namespace for helper functions
     quint32 calculateCrc(const char* type, const unsigned char* data, size_t len) {
         quint32 crc = crc32(0L, Z_NULL, 0);
         crc = crc32(crc, reinterpret_cast<const Bytef*>(type), 4);
-        crc = crc32(crc, reinterpret_cast<const Bytef*>(data), len);
+        crc = crc32(crc, reinterpret_cast<const Bytef*>(data), static_cast<uint>(len));
         return crc;
     }
 
@@ -364,7 +364,7 @@ namespace { // Anonymous namespace for helper functions
         // Output buffer size. Start with something reasonable, grow if needed.
         // A common heuristic is 1.001 * input_size + 12 (for zlib overhead).
         size_t bufferSize = rawImageData.size() + (rawImageData.size() / 1000) + 12 + 1;
-        compressedData.resize(bufferSize);
+        compressedData.resize(static_cast<int>(bufferSize));
 
         int ret;
         do {
@@ -374,7 +374,7 @@ namespace { // Anonymous namespace for helper functions
             // Resize output buffer if it's full
             if (strm.avail_out == 0) {
                 bufferSize *= 2;
-                compressedData.resize(bufferSize);
+                compressedData.resize(static_cast<int>(bufferSize));
                 strm.avail_out = compressedData.size() - strm.total_out;
                 strm.next_out = reinterpret_cast<Bytef*>(compressedData.data() + strm.total_out);
             }

@@ -1,7 +1,7 @@
 ﻿#include "AnimationController.h"
 #include "BuiltInPalettes.h"
 #include "Palette.h"
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
 #include <QFutureWatcher>
 #include "Formats/Import/RawImporter.h"
 #include "Formats/Import/AniImporter.h"

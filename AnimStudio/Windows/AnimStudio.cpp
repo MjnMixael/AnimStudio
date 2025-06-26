@@ -15,7 +15,7 @@
 #include <QDir>
 #include <QImage>
 #include <QPixmap>
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
 #include <QFuture>
 #include <QFutureWatcher>
 #include <QMessageBox>

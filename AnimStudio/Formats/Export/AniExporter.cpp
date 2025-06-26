@@ -11,7 +11,7 @@
 #define PACKER_CODE                 0xEE    // The escape byte for Hoffoss RLE (used in header and RLE)
 #define PACKING_METHOD_RLE          0       // The byte at the start of the frame noting a non-keyframe
 #define PACKING_METHOD_RLE_KEY      1       // The byte at the start of the frame noting a keyframe
-#define FRAME_HOLDOVER_COLOR_INDEX     254     // As per ani documentation, 254 is holdover from last frame
+#define FRAME_HOLDOVER_COLOR_INDEX  254     // As per ani documentation, 254 is holdover from last frame
 
 void AniExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
@@ -343,7 +343,7 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     writeShort(stream, data.frameCount); // Use actual frame count
 
     // 8. packer_code (char) - used for compressed (repeated) bytes
-    char packerCodeVal = PACKER_CODE; // Defined as 0xEE
+    char packerCodeVal = static_cast<char>(PACKER_CODE);
     stream.writeRawData(&packerCodeVal, 1);
 
     // 9. palette[256] (256 * 3 bytes) - RGB triplets

@@ -5,7 +5,7 @@
 #include <qvector>
 #include <qimage>
 #include <qtimer>
-#include <QtConcurrent>
+#include <QtConcurrent/QtConcurrent>
 #include <QDockWidget>
 #include <QLabel>
 #include <QLineEdit>
