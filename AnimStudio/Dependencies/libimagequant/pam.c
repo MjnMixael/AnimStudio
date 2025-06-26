@@ -112,7 +112,7 @@ LIQ_PRIVATE bool pam_add_to_hash(struct acolorhash_table *acht, unsigned int has
                         if (acht->freestackp <= 0) {
                             // estimate how many colors are going to be + headroom
                             const size_t mempool_size = ((acht->rows + rows-row) * 2 * acht->colors / (acht->rows + row + 1) + 1024) * sizeof(struct acolorhist_arr_item);
-                            new_items = mempool_alloc(&acht->mempool, sizeof(struct acolorhist_arr_item)*capacity, mempool_size);
+                            new_items = mempool_alloc(&acht->mempool, sizeof(struct acolorhist_arr_item)*capacity, (unsigned int)mempool_size);
                         } else {
                             // freestack stores previously freed (reallocated) arrays that can be reused
                             // (all pesimistically assumed to be capacity = 8)
@@ -127,7 +127,7 @@ LIQ_PRIVATE bool pam_add_to_hash(struct acolorhash_table *acht, unsigned int has
                             acht->freestack[acht->freestackp++] = other_items;
                         }
                         const size_t mempool_size = ((acht->rows + rows-row) * 2 * acht->colors / (acht->rows + row + 1) + 32*capacity) * sizeof(struct acolorhist_arr_item);
-                        new_items = mempool_alloc(&acht->mempool, sizeof(struct acolorhist_arr_item)*capacity, mempool_size);
+                        new_items = mempool_alloc(&acht->mempool, sizeof(struct acolorhist_arr_item)*capacity, (unsigned int)mempool_size);
                         if (!new_items) return false;
                         memcpy(new_items, other_items, sizeof(other_items[0])*achl->capacity);
                     }
@@ -163,11 +163,11 @@ LIQ_PRIVATE struct acolorhash_table *pam_allocacolorhash(unsigned int maxcolors,
     mempoolptr m = NULL;
     const size_t buckets_size = hash_size * sizeof(struct acolorhist_arr_head);
     const size_t mempool_size = sizeof(struct acolorhash_table) + buckets_size + estimated_colors * sizeof(struct acolorhist_arr_item);
-    struct acolorhash_table *t = mempool_create(&m, sizeof(*t) + buckets_size, mempool_size, malloc, free);
+    struct acolorhash_table *t = mempool_create(&m, sizeof(*t) + (unsigned int)buckets_size, (unsigned int)mempool_size, malloc, free);
     if (!t) return NULL;
     *t = (struct acolorhash_table){
         .mempool = m,
-        .hash_size = hash_size,
+        .hash_size = (unsigned int)hash_size,
         .maxcolors = maxcolors,
         .ignorebits = ignorebits,
     };
@@ -249,7 +249,7 @@ LIQ_PRIVATE histogram *pam_acolorhashtoacolorhist(const struct acolorhash_table 
 
     float gamma_lut[256];
     to_f_set_gamma(gamma_lut, gamma);
-    for(int i=0; i < hist->size; i++) {
+    for(unsigned int i=0; i < hist->size; i++) {
         int k = hist->boxes[temp[i].cluster].end++;
         hist->achv[k].acolor = rgba_to_f(gamma_lut, temp[i].color);
         hist->achv[k].perceptual_weight = temp[i].weight;
@@ -308,7 +308,7 @@ LIQ_PRIVATE void pam_freecolormap(colormap *c)
 LIQ_PRIVATE void to_f_set_gamma(float gamma_lut[], const double gamma)
 {
     for(int i=0; i < 256; i++) {
-        gamma_lut[i] = pow((double)i/255.0, internal_gamma/gamma);
+        gamma_lut[i] = (float)pow((double)i/255.0, internal_gamma/gamma);
     }
 }
 
@@ -318,8 +318,8 @@ LIQ_PRIVATE LIQ_NONNULL void remove_fixed_colors_from_histogram(histogram *hist,
 {
     const float max_difference = MAX(target_mse/2.f, 2.f/256.f/256.f);
     if (fixed_colors_count) {
-        for(int j=0; j < hist->size; j++) {
-            for(unsigned int i=0; i < fixed_colors_count; i++) {
+        for(unsigned int j=0; j < hist->size; j++) {
+            for(int i=0; i < fixed_colors_count; i++) {
                 if (colordifference(hist->achv[j].acolor, fixed_colors[i]) < max_difference) {
                     hist->achv[j] = hist->achv[--hist->size]; // remove color from histogram by overwriting with the last entry
                     j--; break; // continue searching histogram

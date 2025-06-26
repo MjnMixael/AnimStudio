@@ -68,7 +68,7 @@ LIQ_PRIVATE LIQ_NONNULL float remap_to_palette(liq_image *const input_image, uns
 
     nearest_free(n);
 
-    return remapping_error / (input_image->width * input_image->height);
+    return (float)remapping_error / (input_image->width * input_image->height);
 }
 
 inline static f_pixel get_dithered_pixel(const float dither_level, const float max_dither_error, const f_pixel thiserr, const f_pixel px)

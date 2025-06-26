@@ -86,8 +86,8 @@ static vp_node *vp_create_node(mempoolptr *m, vp_sort_tmp indexes[], int num_ind
         *node = (vp_node){
             .vantage_point = items[indexes[0].idx].acolor,
             .idx = indexes[0].idx,
-            .radius = MAX_DIFF,
-            .radius_squared = MAX_DIFF,
+            .radius = (float)MAX_DIFF,
+            .radius_squared = (float)MAX_DIFF,
         };
         return node;
     }
@@ -144,8 +144,8 @@ LIQ_PRIVATE struct nearest_map *nearest_init(const colormap *map) {
 
     for(unsigned int i=0; i < map->colors; i++) {
         vp_search_tmp best = {
-            .distance = MAX_DIFF,
-            .distance_squared = MAX_DIFF,
+            .distance = (float)MAX_DIFF,
+            .distance_squared = (float)MAX_DIFF,
             .exclude = i,
         };
         vp_search_node(root, &map->palette[i].acolor, &best);

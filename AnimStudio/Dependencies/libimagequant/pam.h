@@ -141,12 +141,12 @@ inline static liq_color f_to_rgb(const float gamma, const f_pixel px)
     g *= 256.f;
     b *= 256.f;
     float a = (256.f / LIQ_WEIGHT_A) * px.a;
-
+    
     return (liq_color){
-        .r = r>=255.f ? 255 : r,
-        .g = g>=255.f ? 255 : g,
-        .b = b>=255.f ? 255 : b,
-        .a = a>=255.f ? 255 : a,
+        .r = r>=255.f ? (unsigned char)255 : (unsigned char)r,
+        .g = g>=255.f ? (unsigned char)255 : (unsigned char)g,
+        .b = b>=255.f ? (unsigned char)255 : (unsigned char)b,
+        .a = a>=255.f ? (unsigned char)255 : (unsigned char)a,
     };
 }
 

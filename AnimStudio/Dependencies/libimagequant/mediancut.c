@@ -41,10 +41,10 @@ static f_pixel box_variance(const hist_item achv[], const struct box *box)
     }
 
     return (f_pixel){
-        .a = variancea,
-        .r = variancer,
-        .g = varianceg,
-        .b = varianceb,
+        .a = (float)variancea,
+        .r = (float)variancer,
+        .g = (float)varianceg,
+        .b = (float)varianceb,
     };
 }
 
@@ -211,7 +211,7 @@ static double prepare_sort(struct box *b, hist_item achv[])
     double totalvar = 0;
     #pragma omp parallel for if (end - ind > 15000) \
         schedule(static) default(shared) reduction(+:totalvar)
-    for(unsigned int j=ind; j < end; j++) totalvar += (achv[j].color_weight = color_weight(median, achv[j]));
+    for(unsigned int j=ind; j < end; j++) totalvar += (achv[j].color_weight = (float)color_weight(median, achv[j]));
     return totalvar / 2.0;
 }
 
@@ -482,5 +482,5 @@ static f_pixel averagepixels(unsigned int clrs, const hist_item achv[])
 
     assert(!isnan(r) && !isnan(g) && !isnan(b) && !isnan(a));
 
-    return (f_pixel){.r=r, .g=g, .b=b, .a=a};
+    return (f_pixel){.r = (float)r, .g = (float)g, .b = (float)b, .a = (float)a};
 }

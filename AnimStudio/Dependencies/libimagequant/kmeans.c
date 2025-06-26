@@ -52,13 +52,13 @@ LIQ_PRIVATE void kmeans_finalize(colormap *map, const unsigned int max_threads, 
         }
 
         if (!map->palette[i].fixed) {
-            map->palette[i].popularity = total;
+            map->palette[i].popularity = (float)total;
             if (total) {
                 map->palette[i].acolor = (f_pixel){
-                    .a = a / total,
-                    .r = r / total,
-                    .g = g / total,
-                    .b = b / total,
+                    .a = (float)a / (float)total,
+                    .r = (float)r / (float)total,
+                    .g = (float)g / (float)total,
+                    .b = (float)b / (float)total,
                 };
             } else {
                 // if a color is useless, make a new one

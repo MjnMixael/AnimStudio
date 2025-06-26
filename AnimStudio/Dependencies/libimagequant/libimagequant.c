@@ -422,7 +422,7 @@ static void *liq_aligned_malloc(size_t size)
     uintptr_t offset = 16 - ((uintptr_t)ptr & 15); // also reserves 1 byte for ptr[-1]
     ptr += offset;
     assert(0 == (((uintptr_t)ptr) & 15));
-    ptr[-1] = offset ^ 0x59; // store how much pointer was shifted to get the original for free()
+    ptr[-1] = (unsigned char)(offset ^ 0x59); // store how much pointer was shifted to get the original for free()
     return ptr;
 }
 
@@ -1175,7 +1175,7 @@ LIQ_NONNULL static void set_rounded_palette(liq_palette *const dest, colormap *c
 
     dest->count = map->colors;
     for(unsigned int x = 0; x < map->colors; ++x) {
-        liq_color px = f_to_rgb(gamma, map->palette[x].acolor);
+        liq_color px = f_to_rgb((float)gamma, map->palette[x].acolor);
 
         px.r = posterize_channel(px.r, posterize);
         px.g = posterize_channel(px.g, posterize);
@@ -1350,7 +1350,7 @@ LIQ_NONNULL static liq_error finalize_histogram(liq_histogram *input_hist, liq_a
         return LIQ_OUT_OF_MEMORY;
     }
     liq_verbose_printf(options, "  made histogram...%d colors found", hist->size);
-    remove_fixed_colors_from_histogram(hist, input_hist->fixed_colors_count, input_hist->fixed_colors, options->target_mse);
+    remove_fixed_colors_from_histogram(hist, input_hist->fixed_colors_count, input_hist->fixed_colors, (float)options->target_mse);
 
     *hist_output = hist;
     return LIQ_OK;
@@ -1489,7 +1489,7 @@ LIQ_NONNULL static void update_dither_map(liq_image *input_image, unsigned char 
 
                 while(lastcol <= col) {
                     int e = edges[row*width + lastcol];
-                    edges[row*width + lastcol++] = (e+128) * (255.f/(255+128)) * (1.f - 20.f / (20 + neighbor_count));
+                    edges[row*width + lastcol++] = (unsigned char)((e+128) * (255.f/(255+128)) * (1.f - 20.f / (20 + neighbor_count)));
                 }
                 lastpixel = px;
             }
@@ -1506,10 +1506,10 @@ static colormap *add_fixed_colors_to_palette(colormap *palette, const int max_co
 {
     if (!fixed_colors_count) return palette;
 
-    colormap *newpal = pam_colormap(MIN(max_colors, (palette ? palette->colors : 0) + fixed_colors_count), malloc, free);
+    colormap *newpal = pam_colormap(MIN((unsigned int)max_colors, (palette ? palette->colors : 0) + fixed_colors_count), malloc, free);
     unsigned int i=0;
     if (palette && fixed_colors_count < max_colors) {
-        unsigned int palette_max = MIN(palette->colors, max_colors - fixed_colors_count);
+        unsigned int palette_max = MIN(palette->colors, (unsigned int)max_colors - fixed_colors_count);
         for(; i < palette_max; i++) {
             newpal->palette[i] = palette->palette[i];
         }
@@ -1773,7 +1773,7 @@ LIQ_EXPORT LIQ_NONNULL liq_error liq_write_remapped_image_rows(liq_result *quant
      ** new colormap, and write 'em out.
      */
 
-    float remapping_error = result->palette_error;
+    float remapping_error = (float)result->palette_error;
     if (result->dither_level == 0) {
         set_rounded_palette(&result->int_palette, result->palette, result->gamma, quant->min_posterization_output);
         remapping_error = remap_to_palette(input_image, row_pointers, result->palette);
