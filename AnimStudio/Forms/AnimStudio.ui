@@ -638,6 +638,7 @@ QCheckBox::indicator {
    <addaction name="actionCancel_Reduce_Colors"/>
    <addaction name="separator"/>
    <addaction name="actionCycle_Transparency_Mode"/>
+   <addaction name="actionToggle_Animation_Resizing"/>
   </widget>
   <action name="actionOpenImageSequence">
    <property name="icon">
@@ -748,6 +749,25 @@ QCheckBox::indicator {
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionToggle_Animation_Resizing">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="AnimStudio.qrc">
+     <normaloff>:/AnimStudio/Resources/resize_off.png</normaloff>
+     <normalon>:/AnimStudio/Resources/resize_on.png</normalon>:/AnimStudio/Resources/resize_off.png</iconset>
+   </property>
+   <property name="text">
+    <string>Toggle Animation Resizing</string>
+   </property>
+   <property name="toolTip">
+    <string>Toggle animation resizing</string>
    </property>
   </action>
  </widget>

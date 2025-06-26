@@ -49,6 +49,7 @@ private slots:
     void on_actionShow_Reduced_Colors_toggled(bool checked);
     void on_actionCancel_Reduce_Colors_triggered();
     void on_actionCycle_Transparency_Mode_triggered();
+    void on_actionToggle_Animation_Resizing_toggled(bool checked);
     
     // Animation Control
     void on_playPauseButton_clicked();
@@ -73,6 +74,7 @@ private:
     SpinnerWidget* spinner = nullptr;
     QLabel* m_rightStatusLabel;
     QTimer* m_memTimer;
+    bool m_autoResize = true;
 
     enum class BackgroundMode { Checker, SolidGreen, None };
 

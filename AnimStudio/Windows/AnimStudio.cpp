@@ -37,6 +37,8 @@ AnimStudio::AnimStudio(QWidget* parent)
 {
     ui.setupUi(this);
 
+    ui.actionToggle_Animation_Resizing->setChecked(m_autoResize);
+
     // 1) construct your controller
     animCtrl = new AnimationController(this);
 
@@ -484,6 +486,12 @@ void AnimStudio::on_actionCycle_Transparency_Mode_triggered()
     setBackgroundMode(m_bgMode);
 }
 
+void AnimStudio::on_actionToggle_Animation_Resizing_toggled(bool checked)
+{
+    m_autoResize = checked;
+    adjustPreviewSize();
+}
+
 void AnimStudio::setBackgroundMode(BackgroundMode mode) {
     QWidget* vp;
 
@@ -539,10 +547,14 @@ void AnimStudio::adjustPreviewSize() {
     QSize resolution = animCtrl->getResolution();
     if (resolution.isEmpty()) return;
 
-    QSize available = ui.playerScrollArea->viewport()->size();
-    QSize scaled = resolution;
-    scaled.scale(available, Qt::KeepAspectRatio);
-    ui.previewLabel->setFixedSize(scaled);
+    if (m_autoResize) {
+        QSize available = ui.playerScrollArea->viewport()->size();
+        QSize scaled = resolution;
+        scaled.scale(available, Qt::KeepAspectRatio);
+        ui.previewLabel->setFixedSize(scaled);
+    } else {
+        ui.previewLabel->setFixedSize(resolution);
+    }
 }
 
 void AnimStudio::updateMetadata(std::optional<AnimationData> anim) {
