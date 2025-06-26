@@ -284,7 +284,8 @@ void AnimStudio::on_actionAbout_triggered() {
         "- libpng<br>"
         "- zlib<br>"
         "- libimagequant (v2.x)<br>"
-        "- apngdisassembler"
+        "- apngdisassembler<br>"
+        "- apngasm<br>"
     ).arg(Version);
 
     // Show standard About dialog

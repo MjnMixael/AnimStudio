@@ -66,7 +66,7 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -118,6 +118,8 @@
     <ClCompile Include="Animation\AnimationData.cpp" />
     <ClCompile Include="Animation\BuiltInPalettes.cpp" />
     <ClCompile Include="Animation\Palette.cpp" />
+    <ClCompile Include="Dependencies\apngasm\apngasm.cpp" />
+    <ClCompile Include="Dependencies\apngasm\apngframe.cpp" />
     <ClCompile Include="Dependencies\apngdisassembler\apng_dis.cpp" />
     <ClCompile Include="Dependencies\libimagequant\blur.c" />
     <ClCompile Include="Dependencies\libimagequant\kmeans.c" />
@@ -188,6 +190,8 @@
     <ClInclude Include="Animation\AnimationData.h" />
     <ClInclude Include="Animation\BuiltInPalettes.h" />
     <ClInclude Include="Animation\Palette.h" />
+    <ClInclude Include="Dependencies\apngasm\apngasm.h" />
+    <ClInclude Include="Dependencies\apngasm\apngframe.h" />
     <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h" />
     <ClInclude Include="Dependencies\libimagequant\blur.h" />
     <ClInclude Include="Dependencies\libimagequant\kmeans.h" />

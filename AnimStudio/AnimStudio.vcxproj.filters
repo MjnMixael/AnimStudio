@@ -49,6 +49,9 @@
     <Filter Include="Source Files\Formats\Export">
       <UniqueIdentifier>{6283a9da-09f5-494f-b08f-e6f489f1446f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Dependencies\apngasm">
+      <UniqueIdentifier>{d2c5da0c-2f65-4afa-b2a1-4da602645d1a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -225,6 +228,12 @@
     <ClCompile Include="Windows\ExportAnimation.cpp">
       <Filter>Source Files\Windows</Filter>
     </ClCompile>
+    <ClCompile Include="Dependencies\apngasm\apngasm.cpp">
+      <Filter>Source Files\Dependencies\apngasm</Filter>
+    </ClCompile>
+    <ClCompile Include="Dependencies\apngasm\apngframe.cpp">
+      <Filter>Source Files\Dependencies\apngasm</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -366,6 +375,12 @@
     </ClInclude>
     <ClInclude Include="Formats\ImageFormats.h">
       <Filter>Source Files\Animation</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\apngasm\apngasm.h">
+      <Filter>Source Files\Dependencies\apngasm</Filter>
+    </ClInclude>
+    <ClInclude Include="Dependencies\apngasm\apngframe.h">
+      <Filter>Source Files\Dependencies\apngasm</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
