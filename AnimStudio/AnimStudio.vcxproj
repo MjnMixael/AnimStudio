@@ -76,7 +76,7 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
