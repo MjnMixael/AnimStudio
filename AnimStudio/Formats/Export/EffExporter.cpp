@@ -24,7 +24,7 @@ bool writeEffFile(const AnimationData& data,
     out << "$Type: " << typeStr << "\n";
     out << "$Frames: " << data.frames.size() << "\n";
     out << "$FPS: " << data.fps << "\n";
-    if (data.loopPoint > 0) {
+    if (data.usingLoopPoint && data.loopPoint > 0) {
         out << "$Keyframe: " << data.loopPoint << "\n";
     }
 

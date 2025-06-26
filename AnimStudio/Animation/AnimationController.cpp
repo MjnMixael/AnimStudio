@@ -222,22 +222,37 @@ void AnimationController::advanceFrame() {
     const auto& frames = getCurrentFrames();
     if (frames.isEmpty()) return;
 
-    // 1) compute next index
-    int next = m_currentIndex + 1;
+    int next = m_currentIndex;
 
-    // 2) if we've gone off the end, wrap to keyframe or 0
-    if (next >= frames.size()) {
-        if (m_data.usingLoopPoint) {
-            next = m_data.loopPoint;
+    if (getAllKeyframesActive()) {
+        // ping-pong mode
+        if (m_forward) {
+            next = m_currentIndex + 1;
+            if (next >= frames.size()) {
+                // hit the end → reverse
+                m_forward = false;
+                // bounce back one step
+                next = frames.size() >= 2 ? frames.size() - 2 : 0;
+            }
         } else {
-            next = 0;
+            next = m_currentIndex - 1;
+            if (next < 0) {
+                // hit the start → reverse
+                m_forward = true;
+                next = frames.size() >= 2 ? 1 : 0;
+            }
+        }
+    } else {
+        // normal loop mode
+        next = m_currentIndex + 1;
+        if (next >= frames.size()) {
+            next = m_data.usingLoopPoint
+                ? qBound(0, m_data.loopPoint, frames.size() - 1)
+                : 0;
         }
     }
 
-    // 3) commit and emit
     m_currentIndex = next;
-
-    // now grab the frame by reference
     const AnimationFrame& f = frames[m_currentIndex];
     emit frameReady(f.image, m_currentIndex);
 }

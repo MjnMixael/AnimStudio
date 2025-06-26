@@ -98,6 +98,7 @@ private:
     int                   m_currentIndex = 0;
     bool                  m_showQuantized = false;
     bool                  m_loaded = false;
+    bool                  m_forward = true;
 
     Quantizer             m_quantizer;
 };
