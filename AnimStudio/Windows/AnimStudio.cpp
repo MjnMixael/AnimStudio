@@ -94,6 +94,11 @@ AnimStudio::AnimStudio(QWidget* parent)
             ui.actionReduce_Colors->setEnabled(true);
             ui.actionCancel_Reduce_Colors->setEnabled(false);
             ui.statusBar->showMessage(success ? "Color reduction complete!" : "Color reduction incomplete.");
+
+            // re-enable export buttons
+            ui.actionExport_Animation->setEnabled(true);
+            ui.actionExport_All_Frames->setEnabled(true);
+            ui.actionExport_Current_Frame->setEnabled(true);
         });
 
     connect(animCtrl, &AnimationController::exportProgress,
@@ -447,6 +452,11 @@ void AnimStudio::on_actionReduce_Colors_triggered()
             animCtrl->toggleShowQuantized(false);
             ui.actionShow_Reduced_Colors->setChecked(false);
             ui.actionShow_Reduced_Colors->setEnabled(false);
+
+            // disable export buttons
+            ui.actionExport_Animation->setEnabled(false);
+            ui.actionExport_All_Frames->setEnabled(false);
+            ui.actionExport_Current_Frame->setEnabled(false);
 
             // pull the user’s choice from the dialog
             animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors(), dlg.useTransparencyOverride());
