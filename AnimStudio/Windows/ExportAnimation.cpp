@@ -36,6 +36,14 @@ void ExportAnimationDialog::onFormatChanged(int index)
     Q_UNUSED(index);
     const QString format = ui->typeComboBox->currentText().toLower();
     ui->formatComboBox->setEnabled(format == "eff");
+
+    if (format == "apng") {
+        ui->warningLabel->setText("Be aware that APNGs do not support special loop keyframes. If set, the keyframe will be ignored.");
+        ui->warningLabel->setVisible(true);
+    } else {
+        ui->warningLabel->clear();
+        ui->warningLabel->setVisible(false);
+    }
 }
 
 AnimationType ExportAnimationDialog::selectedAnimationType() const

@@ -58,3 +58,11 @@ struct AnimationData {
 QString getTypeString(AnimationType type);
 
 QVector<AnimationType> getExportableTypes();
+
+struct ExportResult {
+    bool success = false;
+    QString errorMessage;
+
+    static ExportResult ok() { return { true, {} }; }
+    static ExportResult fail(const QString& msg) { return { false, msg }; }
+};

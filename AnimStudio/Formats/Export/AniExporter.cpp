@@ -151,14 +151,13 @@ QByteArray compressScanlineHoffossRLE(const uchar* scanline, int width) {
  * @param aniPath The full path (including filename and .ani extension) where the file should be saved.
  * @return True if the export was successful, false otherwise.
  */
-bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniPath, QString name) {
+ExportResult AniExporter::exportAnimation(const AnimationData& data, const QString& aniPath, QString name) {
     // Construct the full file path: aniPath (directory) + data.baseName + ".ani"
     QString fullAniFilePath = QDir(aniPath).filePath(name + ".ani");
 
     QFile file(fullAniFilePath);
     if (!file.open(QIODevice::WriteOnly)) {
-        qWarning("AniExporter: Could not open file for writing: %s", qPrintable(fullAniFilePath));
-        return false;
+        return ExportResult::fail(QString("Could not open file for writing: %1").arg(fullAniFilePath));
     }
 
     QDataStream stream(&file);
@@ -166,24 +165,21 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
     // --- Validate Input Data ---
     if (data.quantizedFrames.isEmpty()) {
-        qWarning("AniExporter: No frames provided in AnimationData.");
         file.close();
-        return false;
+        return ExportResult::fail(QString("No quantized frames found. You must reduce colors before exporting as ANI."));
     }
 
     // All frames must have the same size and be 8-bit indexed
     const QImage& firstImage = data.quantizedFrames.first().image;
     if (firstImage.format() != QImage::Format_Indexed8) {
-        qWarning("AniExporter: Input QImage must be Format_Indexed8. Please ensure images are correctly quantized.");
         file.close();
-        return false;
+        return ExportResult::fail(QString("Input must be Format_Indexed8. Please ensure images are correctly quantized."));
     }
 
     // Validate the quantizedPalette from AnimationData
     if (data.quantizedPalette.size() != 256) {
-        qWarning("AniExporter: Quantized palette size is not 256. It must be exactly 256 colors for ANI export.");
         file.close();
-        return false;
+        return ExportResult::fail(QString("Quantized palette size is not 256. It must be exactly 256 colors for ANI export."));
     }
 
     // --- Prepare Palette and Transparency ---
@@ -224,10 +220,13 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
 
         // Basic validation for current frame dimensions
         if (currentImage.width() != frameWidth || currentImage.height() != frameHeight) {
-            qWarning("AniExporter: Frame %d has incorrect dimensions (%dx%d instead of %dx%d). Skipping.",
-                i, currentImage.width(), currentImage.height(), frameWidth, frameHeight);
             file.close();
-            return false;
+            return ExportResult::fail(QString("Frame %1 has incorrect dimensions (%2x%3 instead of %4x%5).")
+                .arg(i)
+                .arg(currentImage.width())
+                .arg(currentImage.height())
+                .arg(frameWidth)
+                .arg(frameHeight));
         }
 
         // Determine if the current frame should be a keyframe.
@@ -379,5 +378,5 @@ bool AniExporter::exportAnimation(const AnimationData& data, const QString& aniP
     if (m_progressCallback)
         m_progressCallback(1.0f);
 
-    return true;
+    return ExportResult::ok();
 }

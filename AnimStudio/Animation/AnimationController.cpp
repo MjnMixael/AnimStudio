@@ -34,7 +34,7 @@ void AnimationController::loadApngFile(const QString& path) {
 void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, QString name) {
     if (!m_loaded) return;
 
-    auto* watcher = new QFutureWatcher<bool>(this);
+    auto* watcher = new QFutureWatcher<ExportResult>(this);
 
     QString n;
 
@@ -45,8 +45,8 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
         n = info.completeBaseName(); // removes the extension, if any
     }
 
-    QFuture<bool> future = QtConcurrent::run([=]() -> bool {
-        bool success = true;
+    QFuture<ExportResult> future = QtConcurrent::run([=]() -> ExportResult {
+        ExportResult result;
 
         switch (type) {
         case AnimationType::Ani: {
@@ -54,7 +54,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path, n);
+            result = exporter.exportAnimation(m_data, path, n);
             break;
         }
         case AnimationType::Eff: {
@@ -62,7 +62,7 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path, fmt, n);
+            result = exporter.exportAnimation(m_data, path, fmt, n);
             break;
         }
         case AnimationType::Apng: {
@@ -70,23 +70,25 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
-            success = exporter.exportAnimation(m_data, path, n);
+            result = exporter.exportAnimation(m_data, path, n);
             break;
         }
         default:
-            success = false;
+            result = ExportResult::fail("Invalid export type.");
             break;
         }
 
-        return success;
+        return result;
         });
 
-    connect(watcher, &QFutureWatcher<bool>::finished, this, [=]() {
-        const bool ok = watcher->result();
-        if (!ok) {
-            emit errorOccurred("Export Failed", "An error occurred while exporting the animation.");
+    connect(watcher, &QFutureWatcher<ExportResult>::finished, this, [=]() {
+        ExportResult result = watcher->result();
+        if (!result.success) {
+            emit errorOccurred("Export Failed", result.errorMessage.isEmpty()
+                ? "An unknown error occurred while exporting."
+                : result.errorMessage);
         }
-        emit exportFinished(ok, type, fmt, m_data.frameCount);
+        emit exportFinished(result.success, type, fmt, m_data.frameCount);
         watcher->deleteLater();
         });
 
@@ -97,26 +99,28 @@ void AnimationController::exportAllFrames(const QString& dir, const QString& ext
     if (!m_loaded) return;
 
     ImageFormat fmt = formatFromExtension(ext);
-    auto* watcher = new QFutureWatcher<bool>(this);
+    auto* watcher = new QFutureWatcher<ExportResult>(this);
 
-    QFuture<bool> future = QtConcurrent::run([=]() -> bool {
+    QFuture<ExportResult> future = QtConcurrent::run([=]() -> ExportResult {
         RawExporter exporter;
         exporter.setProgressCallback([this](float p) {
             QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
-            });
-
-        bool ok = exporter.exportAllFrames(m_data, dir, fmt);
-        return ok;
         });
 
-    connect(watcher, &QFutureWatcher<bool>::finished, this, [=]() {
-        bool ok = watcher->result();
-        if (!ok) {
-            emit errorOccurred("Export Failed", QString("Could not write frames to \"%1\"").arg(dir));
+        return exporter.exportAllFrames(m_data, dir, fmt);
+     });
+
+    connect(watcher, &QFutureWatcher<ExportResult>::finished, this, [=]() {
+        ExportResult result = watcher->result();
+        if (!result.success) {
+            QString msg = result.errorMessage.isEmpty()
+                ? QString("Could not write frames to \"%1\"").arg(dir)
+                : result.errorMessage;
+            emit errorOccurred("Export Failed", msg);
         }
-        emit exportFinished(ok, AnimationType::Raw, fmt, m_data.frameCount);
+        emit exportFinished(result.success, AnimationType::Raw, fmt, m_data.frameCount);
         watcher->deleteLater();
-        });
+    });
 
     watcher->setFuture(future);
 }
@@ -127,25 +131,28 @@ void AnimationController::exportCurrentFrame(const QString& path, const QString&
     const int index = m_currentIndex;
     ImageFormat fmt = formatFromExtension(ext);
 
-    auto* watcher = new QFutureWatcher<bool>(this);
+    auto* watcher = new QFutureWatcher<ExportResult>(this);
 
-    QFuture<bool> future = QtConcurrent::run([=]() -> bool {
+    QFuture<ExportResult> future = QtConcurrent::run([=]() -> ExportResult {
         RawExporter exporter;
         exporter.setProgressCallback([this](float p) {
             QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
             });
 
         return exporter.exportCurrentFrame(m_data, index, path, fmt, true);
-        });
+    });
 
-    connect(watcher, &QFutureWatcher<bool>::finished, this, [=]() {
-        bool ok = watcher->result();
-        if (!ok) {
-            emit errorOccurred("Export Failed", QString("Could not write frame %1 to \"%2\"").arg(index).arg(path));
+    connect(watcher, &QFutureWatcher<ExportResult>::finished, this, [=]() {
+        ExportResult result = watcher->result();
+        if (!result.success) {
+            QString msg = result.errorMessage.isEmpty()
+                ? QString("Could not write frame %1 to \"%2\"").arg(index).arg(path)
+                : result.errorMessage;
+            emit errorOccurred("Export Failed", msg);
         }
-        emit exportFinished(ok, AnimationType::Raw, fmt, 1);
+        emit exportFinished(result.success, AnimationType::Raw, fmt, 1);
         watcher->deleteLater();
-        });
+    });
 
     watcher->setFuture(future);
 }

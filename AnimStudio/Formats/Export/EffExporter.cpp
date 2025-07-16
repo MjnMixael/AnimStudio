@@ -9,13 +9,13 @@ void EffExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-bool writeEffFile(const AnimationData& data,
+ExportResult writeEffFile(const AnimationData& data,
     const QString& effPath,
     ImageFormat fmt)
 {
     QFile file(effPath);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        return false;
+        return ExportResult::fail(QString("Failed to write .eff file: could not open '%1'").arg(effPath));
     }
 
     QTextStream out(&file);
@@ -29,34 +29,34 @@ bool writeEffFile(const AnimationData& data,
     }
 
     file.close();
-    return true;
+    return ExportResult::ok();
 }
 
-bool EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, QString name)
+ExportResult EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, QString name)
 {
-    // 1) Create subfolder named after name
+    // Create subfolder named after name
     QDir parentDir(outputDir);
     QString subName = name;
     if (!parentDir.exists(subName)) {
         if (!parentDir.mkpath(subName)) {
-            return false;
+            return ExportResult::fail(QString("Failed to create export subfolder '%1' in '%2'").arg(subName, outputDir));
         }
     }
     QString targetDir = parentDir.filePath(subName);
 
-    // 2) Export all frames with 4-digit zero-padding
+    // Export all frames with 4-digit zero-padding
     const int padDigits = 4;
-    bool ok = true;
-    int frameCount = data.frames.size();
-    for (int i = 0; i < frameCount; ++i) {
+    QStringList errors;
+    for (int i = 0; i < data.frames.size(); ++i) {
         QString fileName = QString("%1_%2%3")
             .arg(name)
             .arg(i, padDigits, 10, QChar('0'))
             .arg(extensionForFormat(fmt));
         QString fullPath = QDir(targetDir).filePath(fileName);
         RawExporter exporter;
-        if (!exporter.exportCurrentFrame(data, i, fullPath, fmt)) {
-            ok = false;
+        ExportResult result = exporter.exportCurrentFrame(data, i, fullPath, fmt, false);
+        if (!result.success) {
+            errors << result.errorMessage;
         }
 
         // Emit progress (frame-wise granularity)
@@ -66,13 +66,20 @@ bool EffExporter::exportAnimation(const AnimationData& data, const QString& outp
         }
     }
 
-    // 3) Write the .eff metadata file inside the same subfolder
+    if (!errors.isEmpty()) {
+        return ExportResult::fail("One or more frames failed to export:\n" + errors.join("\n"));
+    }
+
+    // Write the .eff metadata file inside the same subfolder
     QString effName = name + ".eff";
     QString effPath = QDir(targetDir).filePath(effName);
-    ok = ok && writeEffFile(data, effPath, fmt);
+    ExportResult effResult = writeEffFile(data, effPath, fmt);
+    if (!effResult.success) {
+        return effResult;
+    }
 
     if (m_progressCallback)
         m_progressCallback(1.0f);
 
-    return ok;
+    return ExportResult::ok();
 }

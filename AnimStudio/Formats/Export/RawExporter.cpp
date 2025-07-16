@@ -7,7 +7,7 @@ void RawExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-bool RawExporter::exportCurrentFrame(
+ExportResult RawExporter::exportCurrentFrame(
     const AnimationData& data,
     int frameIndex,
     const QString& outputPath,
@@ -15,7 +15,9 @@ bool RawExporter::exportCurrentFrame(
     bool updateProgress)
 {
     if (frameIndex < 0 || frameIndex >= data.frames.size())
-        return false;
+        return ExportResult::fail(QString("Invalid frame index: %1. Total frames: %2.")
+            .arg(frameIndex)
+            .arg(data.frames.size()));
 
     if (m_progressCallback && updateProgress)
         m_progressCallback(0.0f);
@@ -23,15 +25,22 @@ bool RawExporter::exportCurrentFrame(
     const auto& frame = data.frames[frameIndex].image;
     QImageWriter writer(outputPath);
     writer.setFormat(formatToQtString(format));
-    // you can tweak quality/compression here via writer.setQuality(...)
+    // possibly tweak quality/compression here via writer.setQuality(...) later
+
+    if (!writer.write(frame)) {
+        return ExportResult::fail(QString("Failed to write frame %1 to '%2': %3")
+            .arg(frameIndex)
+            .arg(QFileInfo(outputPath).fileName())
+            .arg(writer.errorString()));
+    }
 
     if (m_progressCallback && updateProgress)
         m_progressCallback(1.0f);
 
-    return writer.write(frame);
+    return ExportResult::ok();
 }
 
-bool RawExporter::exportAllFrames(
+ExportResult RawExporter::exportAllFrames(
     const AnimationData& data,
     const QString& outputDir,
     ImageFormat format)
@@ -39,11 +48,11 @@ bool RawExporter::exportAllFrames(
     QDir dir(outputDir);
     if (!dir.exists()) {
         // fail immediately if user-picked folder doesn’t exist
-        return false;
+        return ExportResult::fail(QString("Output directory does not exist: '%1'").arg(outputDir));
     }
 
     if (data.frameCount == 0) {
-        return true;
+        return ExportResult::fail(QString("No frames available to export!"));
     }
 
     // figure out how many digits we need: last index is data.frameCount-1
@@ -51,7 +60,7 @@ bool RawExporter::exportAllFrames(
     int digits = QString::number(maxIndex).length();
     QString ext = extensionForFormat(format);  // includes the leading “.”
 
-    bool allOk = true;
+    QStringList errors;
     for (int i = 0; i < data.frameCount; ++i) {
         // zero-pad the frame number to 'digits' width
         QString fileName = QString("%1_%2%3")
@@ -60,8 +69,10 @@ bool RawExporter::exportAllFrames(
             .arg(ext);
 
         QString fullPath = dir.filePath(fileName);
-        if (!exportCurrentFrame(data, i, fullPath, format)) {
-            allOk = false;  // continue, but note the failure
+        ExportResult result = exportCurrentFrame(data, i, fullPath, format, false);
+
+        if (!result.success) {
+            errors << result.errorMessage;
         }
 
         // Emit progress (frame-wise granularity)
@@ -73,5 +84,10 @@ bool RawExporter::exportAllFrames(
 
     if (m_progressCallback)
         m_progressCallback(1.0f);
-    return allOk;
+
+    if (!errors.isEmpty()) {
+        return ExportResult::fail("One or more frames failed to export:\n" + errors.join("\n"));
+    }
+
+    return ExportResult::ok();
 }

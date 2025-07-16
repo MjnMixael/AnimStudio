@@ -8,7 +8,7 @@ class ApngExporter {
 public:
     // Export the animation as an animated PNG
     // path is the full path including .apng extension
-    bool exportAnimation(const AnimationData& data, const QString& path, QString name);
+    ExportResult exportAnimation(const AnimationData& data, const QString& path, QString name);
 
     // Call with values from 0.0 to 1.0 (progress %)
     void setProgressCallback(std::function<void(float)> cb);
