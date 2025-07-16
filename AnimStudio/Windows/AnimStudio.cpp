@@ -359,26 +359,18 @@ void AnimStudio::on_actionOpenImageSequence_triggered()
     animCtrl->loadRawSequence(dir);
 }
 
-void AnimStudio::on_actionImport_Animation_triggered()
+void AnimStudio::loadFile(const QString& filePath)
 {
-    QString filePath = QFileDialog::getOpenFileName(
-        this,
-        "Import Animation",
-        QString(),
-        "Animation Files (*.ani *.eff *.png *.apng);;All Files (*.*)"
-    );
     if (filePath.isEmpty())
         return;
 
     m_taskRunning = true;
     toggleToolebarControls();
 
-    // show spinner while loading
     ui.previewLabel->hide();
     resetInterface();
     createSpinner(ui.playerScrollArea);
 
-    // dispatch to controller
     QString ext = QFileInfo(filePath).suffix().toLower();
     if (ext == "ani") {
         animCtrl->loadAniFile(filePath);
@@ -391,6 +383,17 @@ void AnimStudio::on_actionImport_Animation_triggered()
         QMessageBox::warning(this, "Unsupported Format",
             "The selected file format is not supported.");
     }
+}
+
+void AnimStudio::on_actionImport_Animation_triggered()
+{
+    QString filePath = QFileDialog::getOpenFileName(
+        this,
+        "Import Animation",
+        QString(),
+        "Animation Files (*.ani *.eff *.png *.apng);;All Files (*.*)"
+    );
+    loadFile(filePath);
 }
 
 void AnimStudio::on_actionClose_Image_Sequence_triggered()

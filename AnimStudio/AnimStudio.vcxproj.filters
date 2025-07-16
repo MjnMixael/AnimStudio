@@ -399,4 +399,9 @@
       <Filter>Forms</Filter>
     </QtRcc>
   </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="app_icon.rc">
+      <Filter>Source Files</Filter>
+    </ResourceCompile>
+  </ItemGroup>
 </Project>

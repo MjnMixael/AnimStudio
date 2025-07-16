@@ -30,6 +30,8 @@ public:
 
     static constexpr char const* Version = "0.8.5";
 
+    void loadFile(const QString& filePath);
+
 protected:
     void resizeEvent(QResizeEvent* event) override;
 
