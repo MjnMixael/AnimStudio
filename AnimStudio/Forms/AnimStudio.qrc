@@ -1,5 +1,6 @@
 <RCC>
   <qresource prefix="AnimStudio">
+    <file>Resources/logo.png</file>
     <file>Resources/resize_off.png</file>
     <file>Resources/resize_on.png</file>
     <file>Resources/checked_bg_tile.png</file>

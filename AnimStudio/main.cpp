@@ -1,13 +1,14 @@
+#include <QApplication>
 #include <QCoreApplication>
 #include <QCommandLineParser>
 #include <QFileInfo>
 #include <QTextStream>
+#include <QSplashScreen>
 
 #include "Windows/AnimStudio.h"
 #include "Animation/AnimationController.h"
 #include "Animation/Palette.h"
 #include "Animation/BuiltInPalettes.h"
-#include <QApplication>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -242,6 +243,13 @@ int main(int argc, char* argv[])
         return runBatchMode(app);
     }
 
+    QSplashScreen* splash = new QSplashScreen;
+    splash->setPixmap(QPixmap(":/AnimStudio/Resources/logo.png"));
+    splash->show();
+    app.processEvents();
+
+    QThread::sleep(2);
+
     QString fileToOpen;
     if (args.size() >= 2 && QFileInfo::exists(args.at(1))) {
         fileToOpen = args.at(1);
@@ -249,6 +257,8 @@ int main(int argc, char* argv[])
 
     AnimStudio window;
     window.show();
+
+    splash->finish(&window);
 
     if (!fileToOpen.isEmpty()) {
         window.loadFile(fileToOpen);
