@@ -57,7 +57,7 @@ namespace Palette {
 
         QTextStream in(&f);
         if (in.readLine().trimmed() != QLatin1String("JASC-PAL")) {
-            qWarning() << "loadJascPal: not a JASC-PAL file:" << fileName;
+            qWarning() << "loadJascPal: not a JASC-PAL file... Trying RIFF-PAL" << fileName;
             return false;
         }
 
