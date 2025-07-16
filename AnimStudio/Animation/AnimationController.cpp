@@ -54,6 +54,22 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
+
+            if (!m_data.quantized) {
+                qInfo() << "ANI export requires quantization. Running with defaults.";
+
+                QEventLoop loop;
+                QObject::connect(this, &AnimationController::quantizationFinished, &loop, &QEventLoop::quit);
+
+                this->quantize({}, 100, 256, true);
+                loop.exec(); // Block here until quantization completes
+
+                if (!m_data.quantized) {
+                    result = ExportResult::fail("Automatic quantization failed.");
+                    break;
+                }
+            }
+
             result = exporter.exportAnimation(m_data, path, n);
             break;
         }
@@ -388,16 +404,26 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
     m_data.quantizedFrames = m_data.frames;
     m_data.quantized = false;
 
+    QVector<QRgb> l_palette;
+    if (!palette.empty()) {
+        l_palette = palette;
+        Palette::padTo256(l_palette);
+
+        if (enforceTransparency) {
+            Palette::setupAniTransparency(l_palette);
+        }
+    }
+
     // make a **local copy** of the frames so clear() can't stomp them
     QVector<AnimationFrame> framesCopy = m_data.frames;
 
     // 1) Launch async quantization with progress callback
-    auto future = QtConcurrent::run([this, framesCopy, palette, quality, maxColors, enforceTransparency]() -> std::optional<QuantResult> {
+    auto future = QtConcurrent::run([this, framesCopy, l_palette, quality, maxColors, enforceTransparency]() -> std::optional<QuantResult> {
         m_quantizer.reset();
 
         // Build and configure our Quantizer
-        if (!palette.isEmpty()) {
-            m_quantizer.setCustomPalette(palette);
+        if (!l_palette.isEmpty()) {
+            m_quantizer.setCustomPalette(l_palette);
         }
         if (quality >= 0 && quality <= 100) {
             m_quantizer.setQualityRange(0, quality);

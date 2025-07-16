@@ -213,11 +213,26 @@ namespace Palette {
     // --- Pad to 256 entries ---
     void padTo256(QVector<QRgb>& palette)
     {
-        QRgb c = palette.isEmpty() ? qRgba(0, 255, 0, 255) : palette.last();
+        QRgb c = palette.isEmpty() ? qRgba(0, 0, 0, 255) : palette.last();
         while (palette.size() < 256)
             palette.append(c);
         if (palette.size() > 256)
             palette.resize(256);
+    }
+
+    // --- Setup for FSO's ANI transparency ---
+    void setupAniTransparency(QVector<QRgb>& palette) {
+        padTo256(palette);
+        for (auto& color : palette) {
+            if (qRed(color) == 0 &&
+                qGreen(color) == 255 &&
+                qBlue(color) == 0 &&
+                qAlpha(color) == 255) {
+                color = qRgba(0, 254, 0, 255);
+            }
+        }
+
+        palette.last() = qRgba(0, 255, 0, 255); // ensure last color is FSO's transparent green
     }
 
     // --- Auto-detect format based on extension ---

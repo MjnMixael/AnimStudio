@@ -373,7 +373,6 @@ ExportResult AniExporter::exportAnimation(const AnimationData& data, const QStri
     stream.writeRawData(compressedImageData.constData(), compressedImageData.size());
 
     file.close();
-    qInfo("AniExporter: Successfully exported animation to %s", qPrintable(fullAniFilePath));
 
     if (m_progressCallback)
         m_progressCallback(1.0f);

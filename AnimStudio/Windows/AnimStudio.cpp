@@ -420,11 +420,6 @@ void AnimStudio::on_actionExport_Animation_triggered()
     m_taskRunning = true;
     toggleToolebarControls();
 
-    if (dlg.selectedAnimationType() == AnimationType::Ani && !animCtrl->isQuantized()) {
-        QMessageBox::critical(this, "Cannot Export", "Reduce colors before exporting as ANI format!");
-        return;
-    }
-
     // Dispatch
     animCtrl->exportAnimation(outDir, dlg.selectedAnimationType(), dlg.selectedImageFormat(), dlg.chosenBaseName());
 

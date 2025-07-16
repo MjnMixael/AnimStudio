@@ -44,4 +44,5 @@ namespace Palette {
     bool loadPaletteAuto(const QString& fileName, QVector<QRgb>& out); // Detect + Load
 
     void padTo256(QVector<QRgb>& palette);
+    void setupAniTransparency(QVector<QRgb>& palette);
 }
