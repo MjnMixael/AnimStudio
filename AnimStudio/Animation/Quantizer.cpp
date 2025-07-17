@@ -123,6 +123,9 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
             if (colorCount == 255 && enforceTransparency_) {
                 col.a = 0;
+
+                // Also adjust our source palette just to be sure
+                customPalette_[colorCount] = qRgba(qRed(qc), qGreen(qc), qBlue(qc), 0);
             }
             
             entries.push_back({ col, 1u }); // count=1.0f
@@ -192,8 +195,7 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     liq_set_dithering_level(resultPal, ditheringLevel_);
     QVector<QRgb> table;
     table.reserve(pal->count);
-    const int nColors = static_cast<int>(pal->count);
-    for (int i = 0; i < nColors; ++i) {
+    for (int i = 0; i < static_cast<int>(pal->count); ++i) {
         if (cancelRequested_.load()) return quit("Quantize: cancelled by user");
         const liq_color& c = pal->entries[i];
         table.append(qRgba(c.r, c.g, c.b, c.a));
@@ -238,6 +240,64 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
     // Clean up quantization result & attributes
     liq_result_destroy(resultPal);
     liq_attr_destroy(attr);
+
+    // This sucks but now that the quantization is done, we need
+    // to make sure the palette order is the same as the input if provided...
+    // So we gotta do a little remapping again here. But we can hash map it and
+    // be faster about it.
+    if (usingCustomPalette) {
+        // Create a hash map of the original palette for fast lookup
+        QHash<QRgb, int> colorMap;
+        for (int i = 0; i < customPalette_.size(); ++i) {
+            colorMap[customPalette_[i]] = i;
+        }
+        // Now create a mapping from the quantized palette back to the original indices
+        QVector<int> remap(table.size(), -1);
+        for (int i = 0; i < table.size(); ++i) {
+            auto it = colorMap.find(table[i]);
+            if (it != colorMap.end()) {
+                remap[i] = it.value(); // original index
+            } else {
+                qDebug() << "Quantize: color not found in custom palette, using fallback for index" << i;
+                remap[i] = i; // fallback to self if no match found
+            }
+        }
+
+        // Now remap each frame's image data to use the custom palette
+        for (AnimationFrame& frame : out.frames) {
+            QImage& img = frame.image;
+            if (img.format() != QImage::Format_Indexed8)
+                continue;
+
+            frame.image.setColorTable(customPalette_);
+
+            uchar* bits = img.bits();
+            int size = img.width() * img.height();
+
+            for (int i = 0; i < size; ++i) {
+                bits[i] = remap[bits[i]];
+            }
+        }
+
+        out.palette = customPalette_;
+    }
+
+    // Double check transparency handling
+    for (AnimationFrame& frame : out.frames) {
+        QImage& img = frame.image;
+        if (img.format() != QImage::Format_Indexed8)
+            continue;
+
+        uchar* bits = img.bits();
+        int size = img.width() * img.height();
+
+        for (int i = 0; i < size; ++i) {
+            QRgb originalColor = out.palette[bits[i]];
+            if (qAlpha(originalColor) == 0) {
+                bits[i] = 255; // Force use of index 255 for transparent pixels
+            }
+        }
+    }
 
     running_ = false;
 
