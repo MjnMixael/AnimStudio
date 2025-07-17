@@ -4,6 +4,8 @@
 #include <QByteArray>
 #include <QDebug>
 
+#include "Animation/Palette.h"
+
 // C-callback shim for libimagequant progress callback
 static int liqProgressShim(float fraction, void* userInfo) {
     auto* fn = static_cast<ProgressFn*>(userInfo);
@@ -282,21 +284,27 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         out.palette = customPalette_;
     }
 
-    // Double check transparency handling
-    for (AnimationFrame& frame : out.frames) {
-        QImage& img = frame.image;
-        if (img.format() != QImage::Format_Indexed8)
-            continue;
+    if (enforceTransparency_) {
+        Palette::setupAniTransparency(out.palette);
 
-        uchar* bits = img.bits();
-        int size = img.width() * img.height();
+        // Double check transparency handling
+        for (AnimationFrame& frame : out.frames) {
+            QImage& img = frame.image;
+            if (img.format() != QImage::Format_Indexed8)
+                continue;
 
-        for (int i = 0; i < size; ++i) {
-            QRgb originalColor = out.palette[bits[i]];
-            if (qAlpha(originalColor) == 0) {
-                bits[i] = 255; // Force use of index 255 for transparent pixels
+            uchar* bits = img.bits();
+            int size = img.width() * img.height();
+
+            for (int i = 0; i < size; ++i) {
+                QRgb originalColor = out.palette[bits[i]];
+                if (qAlpha(originalColor) == 0) {
+                    bits[i] = 255; // Force use of index 255 for transparent pixels
+                }
             }
         }
+    } else {
+        Palette::padTo256(out.palette);
     }
 
     running_ = false;

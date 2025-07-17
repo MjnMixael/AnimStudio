@@ -79,6 +79,10 @@ void ReduceColorsDialog::addPalettesToDropdown()
     for (const auto& up : Palette::userPalettes)
         ui->paletteComboBox->addItem("User: " + up.name);
 
+    // select default based on whether we have a current palette ———
+    bool hasCurrent = (currentPalette && !currentPalette->isEmpty());
+    ui->paletteComboBox->setCurrentIndex(hasCurrent ? 1 : 0);
+
     // Re-enable max color box if Automatic selected
     ui->maxColorsSpinBox->setEnabled(ui->paletteComboBox->currentIndex() == 0);
     ui->previewPaletteButton->setEnabled(ui->paletteComboBox->currentIndex() != 0);
