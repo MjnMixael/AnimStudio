@@ -216,9 +216,6 @@
     <ClCompile Include="Formats\Export\ApngExporter.cpp">
       <Filter>Source Files\Formats\Export</Filter>
     </ClCompile>
-    <ClCompile Include="Formats\ImageFormats.cpp">
-      <Filter>Source Files\Animation</Filter>
-    </ClCompile>
     <ClCompile Include="Animation\AnimationData.cpp">
       <Filter>Source Files\Animation</Filter>
     </ClCompile>
@@ -233,6 +230,9 @@
     </ClCompile>
     <ClCompile Include="Dependencies\apngasm\apngframe.cpp">
       <Filter>Source Files\Dependencies\apngasm</Filter>
+    </ClCompile>
+    <ClCompile Include="Formats\ImageFormats.cpp">
+      <Filter>Source Files\Formats</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -373,14 +373,14 @@
     <ClInclude Include="Formats\Export\ApngExporter.h">
       <Filter>Source Files\Formats\Export</Filter>
     </ClInclude>
-    <ClInclude Include="Formats\ImageFormats.h">
-      <Filter>Source Files\Animation</Filter>
-    </ClInclude>
     <ClInclude Include="Dependencies\apngasm\apngasm.h">
       <Filter>Source Files\Dependencies\apngasm</Filter>
     </ClInclude>
     <ClInclude Include="Dependencies\apngasm\apngframe.h">
       <Filter>Source Files\Dependencies\apngasm</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\ImageFormats.h">
+      <Filter>Source Files\Formats</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
