@@ -45,7 +45,7 @@ struct AnimationData {
     float totalLength = 0;
     QVector<int> keyframeIndices;
     int loopPoint = 0; // frame index to loop back to
-    bool usingLoopPoint = false;
+    bool hasLoopPoint = false;
 
     QVector<AnimationFrame> frames;
     QVector<AnimationFrame> quantizedFrames;

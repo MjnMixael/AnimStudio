@@ -325,7 +325,7 @@ void AnimationController::advanceFrame() {
         // normal loop mode
         next = m_currentIndex + 1;
         if (next >= frames.size()) {
-            next = m_data.usingLoopPoint
+            next = m_data.hasLoopPoint
                 ? qBound(0, m_data.loopPoint, frames.size() - 1)
                 : 0;
         }
@@ -369,11 +369,11 @@ bool AnimationController::isPlaying() const {
 }
 
 void AnimationController::setLoopPoint(int frame) {
-    m_data.usingLoopPoint = false; // reset to false, we will set it to true if frame > 0
+    m_data.hasLoopPoint = false; // reset to false, we will set it to true if frame > 0
     if (frame >= 0 && frame < m_data.frameCount) {
         m_data.loopPoint = frame; // Store this specific int for easy access
         if (frame > 0) {
-            m_data.usingLoopPoint = true;
+            m_data.hasLoopPoint = true;
         }
         emit metadataChanged(m_data);
     }
@@ -388,9 +388,9 @@ void AnimationController::setAllKeyframesActive(bool all) {
     if (all) {
         m_data.keyframeIndices.resize(m_data.frameCount);
         std::iota(m_data.keyframeIndices.begin(), m_data.keyframeIndices.end(), 0);
-        m_data.usingLoopPoint = false;
+        m_data.hasLoopPoint = false;
     } else {
-        m_data.usingLoopPoint = true;
+        m_data.hasLoopPoint = true;
     }
     emit metadataChanged(m_data);
 }
