@@ -329,6 +329,7 @@ void AnimStudio::on_actionAbout_triggered() {
     // Build the about text
     QString aboutText = QString(
         "<b>AnimStudio %1</b><br><br>"
+        "Designed for the FreespaceOpen Community. <br><br>"
         "AnimStudio is free and open-source software.<br><br>"
         "<b>Dependencies:</b><br>"
         "- libpng<br>"
