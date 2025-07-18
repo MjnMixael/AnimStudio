@@ -337,6 +337,8 @@ void AnimStudio::on_actionAbout_triggered() {
         "- libimagequant (v2.x)<br>"
         "- apngdisassembler<br>"
         "- apngasm<br>"
+        "<br>"
+        "Created by Mike Nelson"
     ).arg(Version);
 
     // Show standard About dialog
