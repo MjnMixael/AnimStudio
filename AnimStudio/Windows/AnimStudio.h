@@ -28,7 +28,7 @@ public:
     AnimStudio(QWidget* parent = nullptr);
     ~AnimStudio();
 
-    static constexpr char const* Version = "0.9.1";
+    static constexpr char const* Version = "1.0.0";
 
     void loadFile(const QString& filePath);
 
