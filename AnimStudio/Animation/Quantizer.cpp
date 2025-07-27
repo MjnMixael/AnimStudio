@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QByteArray>
 #include <QDebug>
+#include <QPainter>
 
 #include "Animation/Palette.h"
 
@@ -158,6 +159,16 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
         QImage img = frame.image;
         if (img.format() != QImage::Format_RGBA8888) {
             img = img.convertToFormat(QImage::Format_RGBA8888);
+        }
+        // If transparency is NOT enforced, flatten the frame onto a black background
+        if (!enforceTransparency_ && img.hasAlphaChannel()) {
+            QImage flattened(w, h, QImage::Format_RGBA8888);
+            flattened.fill(Qt::black); // background color to flatten onto
+            QPainter p(&flattened);
+            p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+            p.drawImage(0, 0, img);
+            p.end();
+            img = std::move(flattened);
         }
         if (img.width() != w || img.height() != h) {
             return quit("Quantize: frame sizes differ, cannot global-quantize");

@@ -16,6 +16,7 @@ public:
     explicit ReduceColorsDialog(const AnimationController* animCtrl, QWidget* parent = nullptr);
     ~ReduceColorsDialog();
     QVector<QRgb> selectedPalette() const;
+    std::pair<bool, bool> selectedPaletteTransparency() const;
     int getQuality() const;
     int getMaxColors() const;
     bool useTransparencyOverride() const;

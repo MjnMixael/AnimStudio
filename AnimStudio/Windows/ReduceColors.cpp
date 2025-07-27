@@ -41,10 +41,12 @@ ReduceColorsDialog::ReduceColorsDialog(const AnimationController* animCtrl, QWid
         [this](int idx) {
             ui->maxColorsSpinBox->setEnabled(idx == 0);
             ui->previewPaletteButton->setEnabled(idx != 0);
-            ui->transparencyCheckBox->setEnabled(idx != 0);
-            if (idx == 0) {
-                ui->transparencyCheckBox->setChecked(true);
-            }
+
+            // Handle transparency checkbox.
+            std::pair<bool, bool> transparency = selectedPaletteTransparency();
+
+            ui->transparencyCheckBox->setChecked(transparency.first);
+            ui->transparencyCheckBox->setEnabled(!transparency.second);
         });
 
     connect(ui->importPaletteButton, &QPushButton::clicked, this, &ReduceColorsDialog::onImportPalette);
@@ -178,6 +180,34 @@ QVector<QRgb> ReduceColorsDialog::selectedPalette() const {
     }
 
     return {};
+}
+
+std::pair<bool, bool> ReduceColorsDialog::selectedPaletteTransparency() const {
+    std::pair<bool, bool> result = { true, false };
+
+    int idx = ui->paletteComboBox->currentIndex();
+    if (idx == 0) return result; // Automatic
+
+    // Check if "Current Palette" is present at index 1
+    bool hasCurrent = (m_animCtrl &&
+        m_animCtrl->isQuantized() &&
+        m_animCtrl->getCurrentPalette() &&
+        !m_animCtrl->getCurrentPalette()->isEmpty());
+
+    if (hasCurrent && idx == 1) {
+        return result;
+    }
+
+    int offset = hasCurrent ? 2 : 1; // Adjust for optional "Current Palette"
+
+    int builtinIndex = idx - offset;
+    const auto& builtins = getBuiltInPalettes();
+    if (builtinIndex >= 0 && builtinIndex < builtins.size()) {
+        result.first = builtins[builtinIndex].transparencySetting;
+        result.second = builtins[builtinIndex].transparencySettingEnforced;
+    }
+
+    return result;
 }
 
 int ReduceColorsDialog::getQuality() const {
