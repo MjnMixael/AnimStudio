@@ -160,6 +160,7 @@
     <ClCompile Include="Dependencies\zlib\uncompr.c" />
     <ClCompile Include="Dependencies\zlib\zutil.c" />
     <ClCompile Include="Formats\Custom Handlers\PcxHandler.cpp" />
+    <ClCompile Include="Formats\Custom Handlers\TgaHandler.cpp" />
     <ClCompile Include="Formats\Export\AniExporter.cpp" />
     <ClCompile Include="Formats\Export\ApngExporter.cpp" />
     <ClCompile Include="Formats\Export\EffExporter.cpp" />
@@ -224,6 +225,7 @@
     <ClInclude Include="Dependencies\zlib\zlib.h" />
     <ClInclude Include="Dependencies\zlib\zutil.h" />
     <ClInclude Include="Formats\Custom Handlers\PcxHandler.h" />
+    <ClInclude Include="Formats\Custom Handlers\TgaHandler.h" />
     <ClInclude Include="Formats\Export\AniExporter.h" />
     <ClInclude Include="Formats\Export\ApngExporter.h" />
     <ClInclude Include="Formats\Export\EffExporter.h" />

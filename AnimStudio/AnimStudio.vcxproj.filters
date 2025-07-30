@@ -246,6 +246,9 @@
     <ClCompile Include="Formats\Custom Handlers\PcxHandler.cpp">
       <Filter>Source Files\Formats\Custom Handlers</Filter>
     </ClCompile>
+    <ClCompile Include="Formats\Custom Handlers\TgaHandler.cpp">
+      <Filter>Source Files\Formats\Custom Handlers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -401,6 +404,9 @@
       <Filter>Source Files\Formats</Filter>
     </ClInclude>
     <ClInclude Include="Formats\Custom Handlers\PcxHandler.h">
+      <Filter>Source Files\Formats\Custom Handlers</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\Custom Handlers\TgaHandler.h">
       <Filter>Source Files\Formats\Custom Handlers</Filter>
     </ClInclude>
   </ItemGroup>

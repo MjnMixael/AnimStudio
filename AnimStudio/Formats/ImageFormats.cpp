@@ -7,7 +7,7 @@ const std::unordered_map<ImageFormat, QString> imageFormatExtensions = {
     { ImageFormat::Png, ".png" },
     { ImageFormat::Jpg, ".jpg" },
     { ImageFormat::Bmp, ".bmp" },
-    //{ ImageFormat::Tga, ".tga" },
+    { ImageFormat::Tga, ".tga" },
     { ImageFormat::Pcx, ".pcx" },
     //{ ImageFormat::Dds, ".dds" }
 };

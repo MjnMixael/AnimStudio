@@ -11,7 +11,7 @@ enum class ImageFormat {
     Png,
     Jpg,
     Bmp,
-    //Tga,
+    Tga,
     Pcx,
     //Dds
 };
