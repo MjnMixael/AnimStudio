@@ -1,6 +1,7 @@
 #include "RawImporter.h"
 #include "Animation/AnimationData.h"
 #include "Formats/ImageFormats.h"
+#include "Formats/ImageLoader.h"
 #include <QDir>
 #include <QImageReader>
 #include <QRegularExpression>
@@ -8,6 +9,57 @@
 
 void RawImporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
+}
+
+QVector<AnimationFrame> RawImporter::loadImageSequence(const QStringList& filePaths, QStringList& warnings, std::function<void(float)> progressCallback)
+{
+    QVector<AnimationFrame> result;
+    QSize refSize;
+    bool refSizeSet = false;
+
+    // Use a 1x1 transparent temp image for placeholder initially
+    QImage tinyBlank(1, 1, QImage::Format_RGBA8888);
+    tinyBlank.fill(Qt::transparent);
+    QVector<int> blankIndices;
+
+    for (int i = 0; i < filePaths.size(); ++i) {
+        const QString& path = filePaths[i];
+        QString fileName = QFileInfo(path).fileName();
+        QImage img = ImageLoader::load(path);
+        if (img.isNull()) {
+            warnings.append(QString("Missing or unreadable frame: %1").arg(fileName));
+            result.append(AnimationFrame{ tinyBlank, i, fileName });
+            blankIndices.append(i);
+        } else {
+            if (!refSizeSet) {
+                refSize = img.size();
+                refSizeSet = true;
+            } else if (img.size() != refSize) {
+                warnings << QString("Size mismatch at frame %1: %2 (%3x%4), expected %5x%6")
+                    .arg(i)
+                    .arg(fileName)
+                    .arg(img.width())
+                    .arg(img.height())
+                    .arg(refSize.width())
+                    .arg(refSize.height());
+            }
+            result.append(AnimationFrame{ img, i, fileName });
+        }
+
+        if (progressCallback)
+            progressCallback(static_cast<float>(i + 1) / filePaths.size());
+    }
+
+    // Fix placeholder frames if refSize is known
+    if (refSizeSet) {
+        QImage properBlank(refSize, QImage::Format_RGBA8888);
+        properBlank.fill(Qt::transparent);
+        for (int index : blankIndices) {
+            result[index].image = properBlank;
+        }
+    }
+
+    return result;
 }
 
 AnimationData RawImporter::importBlocking(const QString& dir) {
@@ -81,43 +133,12 @@ AnimationData RawImporter::importBlocking(const QString& dir) {
         }
     }
 
-    QSize refSize;
+    QStringList filePaths;
     for (int i = 0; i <= maxIndex; ++i) {
-        if (!frameMap.contains(i)) {
-            QImage blank(refSize.isValid() ? refSize : QSize(1, 1), QImage::Format_RGBA8888);
-            blank.fill(Qt::transparent);
-            data.frames.append({ blank });
-            data.importWarnings << QString("Missing frame #%1 - filled with transparent.").arg(i);
-            continue;
-        }
-
         QString fullPath = directory.filePath(frameMap[i]);
-        QImage img(fullPath);
-        if (img.isNull()) {
-            data.importWarnings << "Could not load: " + fullPath;
-            data.frames.append({ QImage() });
-            continue;
-        }
-
-        if (!refSize.isValid()) {
-            refSize = img.size();
-        } else if (img.size() != refSize) {
-            data.importWarnings << QString("Resizing frame #%1 from %2x%3 to %4x%5.")
-                .arg(i)
-                .arg(img.width()).arg(img.height())
-                .arg(refSize.width()).arg(refSize.height());
-            img = img.scaled(refSize, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-        }
-
-        data.frames.append({ img });
-
-        // Emit progress 0 - 25
-        if (m_progressCallback) {
-            int frameCount = maxIndex + 1;
-            float frac = float(i + 1) / float(frameCount);
-            m_progressCallback(0.25f + frac * 0.75f);
-        }
+        filePaths.append(fullPath);
     }
+    data.frames = loadImageSequence(filePaths, data.importWarnings, m_progressCallback);
 
     if (m_progressCallback) { m_progressCallback(1); }
 

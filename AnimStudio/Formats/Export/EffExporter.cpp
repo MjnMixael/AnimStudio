@@ -1,6 +1,6 @@
 // EffExporter.cpp
 #include "EffExporter.h"
-#include "RawExporter.h"  // to export PNG/JPG frames
+#include "RawExporter.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDir>

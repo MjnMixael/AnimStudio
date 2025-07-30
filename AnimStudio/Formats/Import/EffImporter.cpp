@@ -1,7 +1,9 @@
 // EffImporter.cpp
 #include "EffImporter.h"
+#include "RawImporter.h"
 #include "Animation/AnimationData.h"
 #include "Formats/ImageFormats.h"
+#include "Formats/ImageLoader.h"
 #include <QFile>
 #include <QTextStream>
 #include <QDir>
@@ -46,20 +48,16 @@ std::optional<AnimationData> EffImporter::parseEff(const QString& effPath) {
 
     QDir dir = QFileInfo(effPath).absoluteDir();
     QString suffix = extensionForFormat(data.type.value());
-
+    
+    QStringList filePaths;
     for (int i = 0; i < data.frameCount; ++i) {
         QString frameName = QString("%1_%2%3").arg(data.baseName).arg(i, 4, 10, QChar('0')).arg(suffix);
         QString fullPath = dir.filePath(frameName);
-        QImage frame(fullPath);
-        if (frame.isNull()) return std::nullopt;
-
-        data.frames.append(AnimationFrame{ frame, i, frameName });
-
-        // report 0 -> 100% over the load loop
-        if (m_progressCallback) {
-            m_progressCallback(float(i + 1) / float(data.frameCount));
-        }
+        filePaths.append(fullPath);
     }
+
+    RawImporter importer;
+    data.frames = importer.loadImageSequence(filePaths, data.importWarnings, m_progressCallback);
 
     if (m_progressCallback) m_progressCallback(1.0f);
 

@@ -78,6 +78,21 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
             exporter.setProgressCallback([this](float p) {
                 QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
                 });
+
+            if (!m_data.quantized && fmt == ImageFormat::Pcx) {
+                qInfo() << "PCX export requires quantization. Running with defaults.";
+
+                QEventLoop loop;
+                QObject::connect(this, &AnimationController::quantizationFinished, &loop, &QEventLoop::quit);
+
+                this->quantize({}, 100, 256, true);
+                loop.exec(); // Block here until quantization completes
+
+                if (!m_data.quantized) {
+                    result = ExportResult::fail("Automatic quantization failed.");
+                    break;
+                }
+            }
             result = exporter.exportAnimation(m_data, path, fmt, n);
             break;
         }
@@ -115,6 +130,19 @@ void AnimationController::exportAllFrames(const QString& dir, const QString& ext
     if (!m_loaded) return;
 
     ImageFormat fmt = formatFromExtension(ext);
+    if (fmt == ImageFormat::Pcx && !m_data.quantized) {
+        qInfo() << "PCX export requires quantization. Running with defaults.";
+
+        QEventLoop loop;
+        QObject::connect(this, &AnimationController::quantizationFinished, &loop, &QEventLoop::quit);
+
+        this->quantize({}, 100, 256, true);
+        loop.exec(); // Block here until quantization completes
+
+        if (!m_data.quantized) {
+            qWarning() << "Automatic quantization failed, cannot export PCX frames.";
+        }
+    }
     auto* watcher = new QFutureWatcher<ExportResult>(this);
 
     QFuture<ExportResult> future = QtConcurrent::run([=]() -> ExportResult {

@@ -6,6 +6,9 @@
 
 class RawImporter {
 public:
+    // Import a blocking of frames
+    QVector<AnimationFrame> loadImageSequence(const QStringList& filePaths, QStringList& warnings, std::function<void(float)> progressCallback = nullptr);
+
     AnimationData importBlocking(const QString& dir);
 
     // Call with values from 0.0 to 1.0 (progress %)

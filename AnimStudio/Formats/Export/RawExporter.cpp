@@ -1,5 +1,6 @@
 // RawExporter.cpp
 #include "RawExporter.h"
+#include "Formats/ImageWriter.h"
 #include <QDir>
 #include <QImageWriter>
 
@@ -22,16 +23,22 @@ ExportResult RawExporter::exportCurrentFrame(
     if (m_progressCallback && updateProgress)
         m_progressCallback(0.0f);
 
-    const auto& frame = data.frames[frameIndex].image;
-    QImageWriter writer(outputPath);
-    writer.setFormat(formatToQtString(format));
-    // possibly tweak quality/compression here via writer.setQuality(...) later
+    const QImage& frame = [&]() -> const QImage& {
+        if (format == ImageFormat::Pcx &&
+            frameIndex < data.quantizedFrames.size() &&
+            !data.quantizedFrames[frameIndex].image.isNull())
+        {
+            return data.quantizedFrames[frameIndex].image;
+        }
+        return data.frames[frameIndex].image;
+    }();
 
-    if (!writer.write(frame)) {
-        return ExportResult::fail(QString("Failed to write frame %1 to '%2': %3")
+    QString ext = formatToQtString(format);
+    QImageWriter writer(outputPath);
+    if (!ImageWriter::write(frame, outputPath, ext)) {
+        return ExportResult::fail(QString("Failed to write frame %1 to '%2'")
             .arg(frameIndex)
-            .arg(QFileInfo(outputPath).fileName())
-            .arg(writer.errorString()));
+            .arg(QFileInfo(outputPath).fileName()));
     }
 
     if (m_progressCallback && updateProgress)

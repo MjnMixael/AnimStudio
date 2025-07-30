@@ -52,6 +52,9 @@
     <Filter Include="Source Files\Dependencies\apngasm">
       <UniqueIdentifier>{d2c5da0c-2f65-4afa-b2a1-4da602645d1a}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Formats\Custom Handlers">
+      <UniqueIdentifier>{99a78eb2-b9a2-45f8-8ab8-1836192cfbef}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -234,6 +237,15 @@
     <ClCompile Include="Formats\ImageFormats.cpp">
       <Filter>Source Files\Formats</Filter>
     </ClCompile>
+    <ClCompile Include="Formats\ImageLoader.cpp">
+      <Filter>Source Files\Formats</Filter>
+    </ClCompile>
+    <ClCompile Include="Formats\ImageWriter.cpp">
+      <Filter>Source Files\Formats</Filter>
+    </ClCompile>
+    <ClCompile Include="Formats\Custom Handlers\PcxHandler.cpp">
+      <Filter>Source Files\Formats\Custom Handlers</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <QtMoc Include="Widgets\SpinnerWidget.h">
@@ -381,6 +393,15 @@
     </ClInclude>
     <ClInclude Include="Formats\ImageFormats.h">
       <Filter>Source Files\Formats</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\ImageLoader.h">
+      <Filter>Source Files\Formats</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\ImageWriter.h">
+      <Filter>Source Files\Formats</Filter>
+    </ClInclude>
+    <ClInclude Include="Formats\Custom Handlers\PcxHandler.h">
+      <Filter>Source Files\Formats\Custom Handlers</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
