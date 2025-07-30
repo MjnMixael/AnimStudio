@@ -35,7 +35,7 @@ AnimStudio uses [QT Designer](https://www.qt.io/product/ui-design-tools) for it'
 <img src="AnimStudio/Preview.png">
 
 1. Load Animation
-Open a .ani, .eff, .apng/.png, or folder of images to begin. Supported image formats include PNG, BMP, JPG. More types may be supported in the future.
+Open a .ani, .eff, .apng/.png, or folder of images to begin. Supported image formats include PNG, BMP, JPG, PCX, TGA. More types may be supported in the future.
 
 2. Preview and Navigate
 Use the timeline and frame viewer to step through the animation.
@@ -68,7 +68,7 @@ The above command:
 | `-i`  | `--in`            | **Required.** Input animation file or directory                             |
 | `-o`  | `--out`           | **Required.** Output file or folder path                                    |
 | `-t`  | `--type`          | **Required.** Export type: `ani`, `eff`, `apng`, or `raw`                   |
-| `-e`  | `--ext`           | For `raw` export: Image extension (e.g., `png`, `jpg`, `bmp`)               |
+| `-e`  | `--ext`           | For `raw` export: Image extension (e.g., `png`, `jpg`, `bmp`, `pcx`, `tga`)               |
 | `-n`  | `--basename`      | Optional. Override for the base name of exported files                      |
 | `-q`  | `--quantize`      | Optional. Enables color quantization (required for `.ani`)                  |
 | `-p`  | `--palette`       | Optional. Palette selection:<br>– `"auto"`: Auto-generated from source<br>– Built-in name (quoted if it contains spaces)<br>– `file:<path>`: Load a custom palette from a file |
@@ -81,7 +81,7 @@ The above command:
 ## Notes on Format Support
 
 - ANI: Exports as indexed-color .ani with RLE compression. Requires quantization.
-- EFF: Image sequence export with .eff metadata file. Supports PNG, JPG, BMP.
+- EFF: Image sequence export with .eff metadata file. Supports PNG, JPG, BMP, PCX, TGA.
 - APNG: Technically saved as .png due to FSO's 3-letter extension limit, but contains animation data.
 - RAW: Saves all frames to image files in selected format, no metadata.
 
