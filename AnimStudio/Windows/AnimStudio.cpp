@@ -337,6 +337,7 @@ void AnimStudio::on_actionAbout_triggered() {
         "- libimagequant (v2.x)<br>"
         "- apngdisassembler<br>"
         "- apngasm<br>"
+        "- compressonator <br>"
         "<br>"
         "Created by Mike Nelson"
     ).arg(Version);
@@ -424,7 +425,7 @@ void AnimStudio::on_actionExport_Animation_triggered()
     toggleToolebarControls();
 
     // Dispatch
-    animCtrl->exportAnimation(outDir, dlg.selectedAnimationType(), dlg.selectedImageFormat(), dlg.chosenBaseName());
+    animCtrl->exportAnimation(outDir, dlg.selectedAnimationType(), dlg.selectedImageFormat(), dlg.selectedCompressionFormat(), dlg.chosenBaseName());
 
 }
 
@@ -455,11 +456,30 @@ void AnimStudio::on_actionExport_All_Frames_triggered()
     if (!ok || ext.isEmpty())
         return;
 
+    // Let the user pick the compression format
+    CompressionFormat cFormat = CompressionFormat::BC7;
+    if (ext == "dds") {
+        QStringList compressionOptions = availableCompressionFormats();
+        QString selected = QInputDialog::getItem(
+            this,
+            "Choose Compression Format",
+            "Compression:",
+            compressionOptions,
+            0,      // default to first
+            false,  // editable?
+            &ok
+        );
+        if (!ok || selected.isEmpty())
+            return;
+
+        cFormat = getCompressionFormatFromDescription(selected);
+    }
+
     m_taskRunning = true;
     toggleToolebarControls();
 
     // Dispatch directory + extension to your controller
-    animCtrl->exportAllFrames(folder, ext);
+    animCtrl->exportAllFrames(folder, formatFromExtension(ext), cFormat);
 }
 
 void AnimStudio::on_actionExport_Current_Frame_triggered()
@@ -497,12 +517,32 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
     QFileInfo info(filePath);
     QString ext = info.suffix().toLower();
 
+    // Let the user pick the compression format
+    CompressionFormat cFormat = CompressionFormat::BC7;
+    bool ok = false;
+    if (ext == "dds") {
+        QStringList compressionOptions = availableCompressionFormats();
+        QString selected = QInputDialog::getItem(
+            this,
+            "Choose Compression Format",
+            "Compression:",
+            compressionOptions,
+            0,      // default to first
+            false,  // editable?
+            &ok
+        );
+        if (!ok || selected.isEmpty())
+            return;
+
+        cFormat = getCompressionFormatFromDescription(selected);
+    }
+
     m_taskRunning = true;
     toggleToolebarControls();
 
     // dispatch to controller – make sure your controller method
     // signature matches: (const QString&, Format)
-    animCtrl->exportCurrentFrame(filePath, ext);
+    animCtrl->exportCurrentFrame(filePath, formatFromExtension(ext), cFormat);
 }
 
 void AnimStudio::on_actionReduce_Colors_triggered()

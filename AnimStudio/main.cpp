@@ -9,6 +9,7 @@
 #include "Animation/AnimationController.h"
 #include "Animation/Palette.h"
 #include "Animation/BuiltInPalettes.h"
+#include "Formats/ImageFormats.h"
 
 #ifdef _WIN32
 #include <windows.h>
@@ -58,6 +59,7 @@ int runBatchMode(QCoreApplication& app) {
         {{"o", "out"}, "Output path or folder", "output"},
         {{"t", "type"}, "Export type: ani, eff, apng, raw", "type"},
         {{"e", "ext"}, "Image extension (for raw export)", "ext"},
+        {{"d", "dds"}, "OPTIONAL: Dds export format", "format"},
         {{"n", "basename"}, "OPTIONAL: Basename override", "name"},
         {{"q", "quantize"}, "OPTIONAL: Enable color quantization"},
         {{"p", "palette"}, "OPTIONAL: Palette to use. Options: \"auto\", a built-in name (quoted if contains spaces), or file:<path>", "name"},
@@ -65,7 +67,9 @@ int runBatchMode(QCoreApplication& app) {
         {{"c", "maxcolors"}, "OPTIONAL: Max number of colors for quantization (used only in auto mode)", "value"},
         {{"a", "no-transparency"}, "OPTIONAL: Disable transparency in quantization" },
         {"list-palettes", "Print available built-in palettes and exit"},
-        });
+        {"list-extensions", "Print available image extensions and exit"},
+        {"list-compression", "Print available dds compression formats and exit"},
+    });
 
     parser.process(app);
 
@@ -83,11 +87,28 @@ int runBatchMode(QCoreApplication& app) {
         return 0;
     }
 
+    if (parser.isSet("list-extensions")) {
+        for (const auto& ext : availableExtensions()) {
+            QTextStream(stdout) << "\n  " << ext;
+        }
+        printf("\n");
+        return 0;
+    }
+
+    if (parser.isSet("list-compression")) {
+        for (const auto& fmt : availableCompressionFormats()) {
+            QTextStream(stdout) << "\n  " << fmt.left(3);
+        }
+        printf("\n");
+        return 0;
+    }
+
     QString inPath = parser.value("in");
     QString outPath = parser.value("out");
     QString typeStr = parser.value("type").toLower();
     QString extStr = parser.value("ext").toLower();
     QString baseName = parser.value("basename");
+    QString ddsFormat = parser.value("dds").toLower();
 
     AnimationType exportType;
     if (typeStr == "ani")      exportType = AnimationType::Ani;
@@ -162,6 +183,24 @@ int runBatchMode(QCoreApplication& app) {
         return 1;
     }
 
+    if (extStr.isEmpty()) {
+        extStr = "png";
+    }
+
+    if (!isValidExtension(extStr)) {
+        qWarning("Invalid image extension: %s\n", qPrintable(extStr));
+        return 1;
+    }
+
+    if (ddsFormat.isEmpty()) {
+        ddsFormat = "bc7"; // Default to BC7 if not specified
+    }
+
+    if (!isValidCompressionFormat(ddsFormat)) {
+        qWarning("Invalid DDS compression format: %s\n", qPrintable(ddsFormat));
+        return 1;
+    }
+
     QObject::connect(&controller, &AnimationController::animationLoaded, [&]() {
         // Check for any quantization-related flags
         const bool shouldQuantize =
@@ -223,9 +262,9 @@ int runBatchMode(QCoreApplication& app) {
         }
 
         if (exportType == AnimationType::Raw) {
-            controller.exportAllFrames(outPath, extStr.isEmpty() ? "png" : extStr);
+            controller.exportAllFrames(outPath, formatFromExtension(extStr), getCompressionFormatFromDescription(ddsFormat));
         } else {
-            controller.exportAnimation(outPath, exportType, formatFromExtension(extStr), baseName);
+            controller.exportAnimation(outPath, exportType, formatFromExtension(extStr), getCompressionFormatFromDescription(ddsFormat), baseName);
         }
     });
 

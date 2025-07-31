@@ -17,11 +17,20 @@ ExportAnimationDialog::ExportAnimationDialog(const QString& defaultBaseName, QWi
     ui->formatComboBox->addItems(availableExtensions());
     ui->formatComboBox->setEnabled(false);  // Hidden unless EFF is selected
 
+    // Populate compression format choices (used only for EFF/DDS)
+    ui->compressionComboBox->addItems(availableCompressionFormats());
+    ui->compressionComboBox->setEnabled(false);  // Hidden unless EFF/DDS is selected
+
     // Set base name
     ui->nameLineEdit->setText(defaultBaseName);
 
     // Connect format change to toggle visibility of image format selector
     connect(ui->typeComboBox,
+        QOverload<int>::of(&QComboBox::currentIndexChanged),
+        this, &ExportAnimationDialog::onTypeChanged);
+
+    // Connect format change to toggle visibility of compression format selector
+    connect(ui->formatComboBox,
         QOverload<int>::of(&QComboBox::currentIndexChanged),
         this, &ExportAnimationDialog::onFormatChanged);
 }
@@ -31,19 +40,29 @@ ExportAnimationDialog::~ExportAnimationDialog()
     delete ui;
 }
 
-void ExportAnimationDialog::onFormatChanged(int index)
+void ExportAnimationDialog::onTypeChanged(int index)
 {
     Q_UNUSED(index);
-    const QString format = ui->typeComboBox->currentText().toLower();
-    ui->formatComboBox->setEnabled(format == "eff");
+    const QString type = ui->typeComboBox->currentText().toLower();
+    const QString format = ui->formatComboBox->currentText().toLower();
+    ui->formatComboBox->setEnabled(type == "eff");
+    ui->compressionComboBox->setEnabled(type == "eff" && format == "dds");
 
-    if (format == "apng") {
+    if (type == "apng") {
         ui->warningLabel->setText("Be aware that APNGs do not support special loop keyframes. If set, the keyframe will be ignored.");
         ui->warningLabel->setVisible(true);
     } else {
         ui->warningLabel->clear();
         ui->warningLabel->setVisible(false);
     }
+}
+
+void ExportAnimationDialog::onFormatChanged(int index)
+{
+    Q_UNUSED(index);
+    const QString type = ui->typeComboBox->currentText().toLower();
+    const QString format = ui->formatComboBox->currentText().toLower();
+    ui->compressionComboBox->setEnabled(type == "eff" && format == "dds");
 }
 
 AnimationType ExportAnimationDialog::selectedAnimationType() const
@@ -58,6 +77,12 @@ ImageFormat ExportAnimationDialog::selectedImageFormat() const
 {
     const QString ext = ui->formatComboBox->currentText().toLower();
     return ext.isEmpty() ? ImageFormat::Png : formatFromExtension(ext);
+}
+
+CompressionFormat ExportAnimationDialog::selectedCompressionFormat() const
+{
+    const QString selectedText = ui->compressionComboBox->currentText();
+    return getCompressionFormatFromDescription(selectedText);
 }
 
 QString ExportAnimationDialog::chosenBaseName() const

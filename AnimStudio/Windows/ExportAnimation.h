@@ -15,9 +15,11 @@ public:
 
     AnimationType selectedAnimationType() const;
     ImageFormat selectedImageFormat() const;
+    CompressionFormat selectedCompressionFormat() const;
     QString chosenBaseName() const;
 
 private slots:
+    void onTypeChanged(int index);
     void onFormatChanged(int index);
 
 private:

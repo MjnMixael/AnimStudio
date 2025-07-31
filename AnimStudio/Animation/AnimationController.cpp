@@ -31,7 +31,7 @@ void AnimationController::loadApngFile(const QString& path) {
     beginLoad(AnimationType::Apng, path);
 }
 
-void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, QString name) {
+void AnimationController::exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, CompressionFormat cFormat, QString name) {
     if (!m_loaded) return;
 
     auto* watcher = new QFutureWatcher<ExportResult>(this);
@@ -93,7 +93,15 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
                     break;
                 }
             }
-            result = exporter.exportAnimation(m_data, path, fmt, n);
+            if (fmt == ImageFormat::Dds) {
+                auto width = m_data.originalSize.width();
+                auto height = m_data.originalSize.height();
+                if (width % 4 != 0 || height % 4 != 0) {
+                    result = ExportResult::fail("DDS format requires dimensions to be multiples of 4.");
+                    break;
+                }
+            }
+            result = exporter.exportAnimation(m_data, path, fmt, cFormat, n);
             break;
         }
         case AnimationType::Apng: {
@@ -126,10 +134,9 @@ void AnimationController::exportAnimation(const QString& path, AnimationType typ
     watcher->setFuture(future);
 }
 
-void AnimationController::exportAllFrames(const QString& dir, const QString& ext) {
+void AnimationController::exportAllFrames(const QString& dir, ImageFormat fmt, CompressionFormat cFormat) {
     if (!m_loaded) return;
 
-    ImageFormat fmt = formatFromExtension(ext);
     if (fmt == ImageFormat::Pcx && !m_data.quantized) {
         qInfo() << "PCX export requires quantization. Running with defaults.";
 
@@ -143,6 +150,14 @@ void AnimationController::exportAllFrames(const QString& dir, const QString& ext
             qWarning() << "Automatic quantization failed, cannot export PCX frames.";
         }
     }
+    if (fmt == ImageFormat::Dds) {
+        auto width = m_data.originalSize.width();
+        auto height = m_data.originalSize.height();
+        if (width % 4 != 0 || height % 4 != 0) {
+            emit errorOccurred("Export Failed", "DDS format requires dimensions to be multiples of 4.");
+            return;
+        }
+    }
     auto* watcher = new QFutureWatcher<ExportResult>(this);
 
     QFuture<ExportResult> future = QtConcurrent::run([=]() -> ExportResult {
@@ -151,7 +166,7 @@ void AnimationController::exportAllFrames(const QString& dir, const QString& ext
             QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
         });
 
-        return exporter.exportAllFrames(m_data, dir, fmt);
+        return exporter.exportAllFrames(m_data, dir, fmt, cFormat);
      });
 
     connect(watcher, &QFutureWatcher<ExportResult>::finished, this, [=]() {
@@ -169,11 +184,19 @@ void AnimationController::exportAllFrames(const QString& dir, const QString& ext
     watcher->setFuture(future);
 }
 
-void AnimationController::exportCurrentFrame(const QString& path, const QString& ext) {
+void AnimationController::exportCurrentFrame(const QString& path, ImageFormat fmt, CompressionFormat cFormat) {
     if (!m_loaded || m_currentIndex < 0 || m_currentIndex >= m_data.frames.size()) return;
 
     const int index = m_currentIndex;
-    ImageFormat fmt = formatFromExtension(ext);
+
+    if (fmt == ImageFormat::Dds) {
+        auto width = m_data.originalSize.width();
+        auto height = m_data.originalSize.height();
+        if (width % 4 != 0 || height % 4 != 0) {
+            emit errorOccurred("Export Failed", "DDS format requires dimensions to be multiples of 4.");
+            return;
+        }
+    }
 
     auto* watcher = new QFutureWatcher<ExportResult>(this);
 
@@ -183,7 +206,7 @@ void AnimationController::exportCurrentFrame(const QString& path, const QString&
             QMetaObject::invokeMethod(this, "exportProgress", Qt::QueuedConnection, Q_ARG(float, p));
             });
 
-        return exporter.exportCurrentFrame(m_data, index, path, fmt, true);
+        return exporter.exportCurrentFrame(m_data, index, path, fmt, cFormat, true);
     });
 
     connect(watcher, &QFutureWatcher<ExportResult>::finished, this, [=]() {
@@ -459,7 +482,6 @@ void AnimationController::quantize(const QVector<QRgb>& palette, const int quali
         if (maxColors > 0 && maxColors <= 256) {
             m_quantizer.setMaxColors(maxColors);
         }
-        // TODO dithering?
 
         m_quantizer.setEnforcedTransparency(enforceTransparency);
 

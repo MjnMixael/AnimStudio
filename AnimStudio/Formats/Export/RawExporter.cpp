@@ -3,12 +3,13 @@
 #include "Formats/ImageWriter.h"
 #include <QDir>
 #include <QImageWriter>
+#include <QPainter>
 
 void RawExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int frameIndex, const QString& outputPath, ImageFormat format, bool updateProgress)
+ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int frameIndex, const QString& outputPath, ImageFormat format, CompressionFormat cFormat, bool updateProgress)
 {
     if (frameIndex < 0 || frameIndex >= data.frames.size())
         return ExportResult::fail(QString("Invalid frame index: %1. Total frames: %2.")
@@ -18,7 +19,7 @@ ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int fram
     if (m_progressCallback && updateProgress)
         m_progressCallback(0.0f);
 
-    const QImage& frame = [&]() -> const QImage& {
+    const QImage& originalFrame = [&]() -> const QImage& {
         if (format == ImageFormat::Pcx &&
             frameIndex < data.quantizedFrames.size() &&
             !data.quantizedFrames[frameIndex].image.isNull())
@@ -28,9 +29,25 @@ ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int fram
         return data.frames[frameIndex].image;
     }();
 
-    QString ext = formatToQtString(format);
+    QImage frame = originalFrame;
+
+    if (format == ImageFormat::Dds) {
+        // If BC1 selected and the image has alpha, flatten on black
+        if (cFormat == CompressionFormat::BC1) {
+            bool hasAlpha = frame.hasAlphaChannel();
+            if (hasAlpha) {
+                QImage flattened(frame.size(), QImage::Format_RGB32);
+                flattened.fill(Qt::black);
+                QPainter p(&flattened);
+                p.drawImage(0, 0, frame);
+                p.end();
+                frame = flattened;
+            }
+        }
+    }
+
     QImageWriter writer(outputPath);
-    if (!ImageWriter::write(frame, outputPath, ext)) {
+    if (!ImageWriter::write(frame, outputPath, format, cFormat)) {
         return ExportResult::fail(QString("Failed to write frame %1 to '%2'")
             .arg(frameIndex)
             .arg(QFileInfo(outputPath).fileName()));
@@ -42,7 +59,7 @@ ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int fram
     return ExportResult::ok();
 }
 
-ExportResult RawExporter::exportAllFrames(const AnimationData& data, const QString& outputDir, ImageFormat format)
+ExportResult RawExporter::exportAllFrames(const AnimationData& data, const QString& outputDir, ImageFormat format, CompressionFormat cFormat)
 {
     if (m_progressCallback)
         m_progressCallback(0.0f);
@@ -71,7 +88,7 @@ ExportResult RawExporter::exportAllFrames(const AnimationData& data, const QStri
             .arg(ext);
 
         QString fullPath = dir.filePath(fileName);
-        ExportResult result = exportCurrentFrame(data, i, fullPath, format, false);
+        ExportResult result = exportCurrentFrame(data, i, fullPath, format, cFormat, false);
 
         if (!result.success) {
             errors << result.errorMessage;

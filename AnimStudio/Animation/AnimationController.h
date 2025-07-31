@@ -23,9 +23,9 @@ public:
     void loadApngFile(const QString& path);
 
     // exporting
-    void exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, QString name);
-    void exportAllFrames(const QString& dir, const QString& ext);
-    void exportCurrentFrame(const QString& path, const QString& ext);
+    void exportAnimation(const QString& path, AnimationType type, ImageFormat fmt, CompressionFormat cFormat, QString name);
+    void exportAllFrames(const QString& dir, ImageFormat fmt, CompressionFormat cFormat);
+    void exportCurrentFrame(const QString& path, ImageFormat fmt, CompressionFormat cFormat);
 
     // status
     bool isLoaded() const { return m_loaded; }

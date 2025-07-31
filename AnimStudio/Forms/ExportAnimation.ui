@@ -167,6 +167,16 @@ QCheckBox::indicator {
        <item row="2" column="1">
         <widget class="QComboBox" name="formatComboBox"/>
        </item>
+       <item row="3" column="0">
+        <widget class="QLabel" name="compressionLabel">
+         <property name="text">
+          <string>Compression</string>
+         </property>
+        </widget>
+       </item>
+       <item row="3" column="1">
+        <widget class="QComboBox" name="compressionComboBox"/>
+       </item>
       </layout>
      </item>
     </layout>

@@ -32,7 +32,7 @@ ExportResult writeEffFile(const AnimationData& data,
     return ExportResult::ok();
 }
 
-ExportResult EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, QString name)
+ExportResult EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, CompressionFormat cFormat, QString name)
 {
     if (m_progressCallback)
         m_progressCallback(0.0f);
@@ -57,7 +57,7 @@ ExportResult EffExporter::exportAnimation(const AnimationData& data, const QStri
             .arg(extensionForFormat(fmt));
         QString fullPath = QDir(targetDir).filePath(fileName);
         RawExporter exporter;
-        ExportResult result = exporter.exportCurrentFrame(data, i, fullPath, fmt, false);
+        ExportResult result = exporter.exportCurrentFrame(data, i, fullPath, fmt, cFormat, false);
         if (!result.success) {
             errors << result.errorMessage;
         }
