@@ -287,7 +287,7 @@ int main(int argc, char* argv[])
     splash->show();
     app.processEvents();
 
-    QThread::sleep(2);
+    QThread::sleep(1);
 
     QString fileToOpen;
     if (args.size() >= 2 && QFileInfo::exists(args.at(1))) {
