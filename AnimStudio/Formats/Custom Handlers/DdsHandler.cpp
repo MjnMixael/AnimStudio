@@ -3,6 +3,11 @@
 #include <QDebug>
 #include <QImage>
 
+// If Compressonator needs updates then we'll have to rebuild the debug and release libs.
+// Get the Compressonator SDK source. Last time we built with cmp_compressonatorlib.sln in build_sdk
+// we built the release_MD and debug_MD versions. Copy the .lib and the compressonator.h into
+// dependencies and call it a day. Compiling for other platforms was not handled.
+
 bool DdsHandler::read(QImage* image)
 {
     CMP_MipSet mipSetIn = {};
