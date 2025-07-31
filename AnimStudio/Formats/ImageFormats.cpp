@@ -9,7 +9,7 @@ const std::unordered_map<ImageFormat, QString> imageFormatExtensions = {
     { ImageFormat::Bmp, ".bmp" },
     { ImageFormat::Tga, ".tga" },
     { ImageFormat::Pcx, ".pcx" },
-    //{ ImageFormat::Dds, ".dds" }
+    { ImageFormat::Dds, ".dds" }
 };
 
 QByteArray formatToQtString(ImageFormat fmt) {

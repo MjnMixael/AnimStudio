@@ -66,23 +66,23 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <LanguageStandard>stdcpp17</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;$(ProjectDir)Dependencies\compressonator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;$(ProjectDir)Dependencies\compressonator;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Compressonator_MDd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)Dependencies\libpng;$(ProjectDir)Dependencies\libimagequant;$(ProjectDir)Dependencies\zlib;$(ProjectDir)Dependencies\apngdisassembler;$(ProjectDir)Dependencies\apngasm;$(ProjectDir)Dependencies\compressonator;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)$(Platform)\$(Configuration)\;$(ProjectDir)Dependencies\compressonator;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>Compressonator_MD.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'" Label="Configuration">
@@ -159,6 +159,7 @@
     <ClCompile Include="Dependencies\zlib\trees.c" />
     <ClCompile Include="Dependencies\zlib\uncompr.c" />
     <ClCompile Include="Dependencies\zlib\zutil.c" />
+    <ClCompile Include="Formats\Custom Handlers\DdsHandler.cpp" />
     <ClCompile Include="Formats\Custom Handlers\PcxHandler.cpp" />
     <ClCompile Include="Formats\Custom Handlers\TgaHandler.cpp" />
     <ClCompile Include="Formats\Export\AniExporter.cpp" />
@@ -197,6 +198,7 @@
     <ClInclude Include="Dependencies\apngasm\apngasm.h" />
     <ClInclude Include="Dependencies\apngasm\apngframe.h" />
     <ClInclude Include="Dependencies\apngdisassembler\apng_dis.h" />
+    <ClInclude Include="Dependencies\compressonator\compressonator.h" />
     <ClInclude Include="Dependencies\libimagequant\blur.h" />
     <ClInclude Include="Dependencies\libimagequant\kmeans.h" />
     <ClInclude Include="Dependencies\libimagequant\libimagequant.h" />
@@ -224,6 +226,7 @@
     <ClInclude Include="Dependencies\zlib\zconf.h" />
     <ClInclude Include="Dependencies\zlib\zlib.h" />
     <ClInclude Include="Dependencies\zlib\zutil.h" />
+    <ClInclude Include="Formats\Custom Handlers\DdsHandler.h" />
     <ClInclude Include="Formats\Custom Handlers\PcxHandler.h" />
     <ClInclude Include="Formats\Custom Handlers\TgaHandler.h" />
     <ClInclude Include="Formats\Export\AniExporter.h" />

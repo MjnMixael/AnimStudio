@@ -1,4 +1,5 @@
 #include "ImageWriter.h"
+#include "Custom Handlers/DdsHandler.h"
 #include "Custom Handlers/PcxHandler.h"
 #include "Custom Handlers/TgaHandler.h"
 
@@ -28,6 +29,18 @@ bool ImageWriter::write(const QImage& image, const QString& path, const QString&
 
         TgaHandler handler;
         handler.setDevice(&file);
+        return handler.write(image);
+    }
+
+    if (format.compare("dds", Qt::CaseInsensitive) == 0 || path.endsWith(".dds", Qt::CaseInsensitive)) {
+        QFile file(path);
+        if (!file.open(QIODevice::WriteOnly)) {
+            qWarning() << "Could not open file for DDS writing:" << path;
+            return false;
+        }
+
+        DdsHandler handler;
+        handler.setDevice(path);
         return handler.write(image);
     }
 

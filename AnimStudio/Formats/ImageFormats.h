@@ -13,7 +13,7 @@ enum class ImageFormat {
     Bmp,
     Tga,
     Pcx,
-    //Dds
+    Dds
 };
 
 // Provide a hash function so ImageFormat can be used as a key in unordered_map

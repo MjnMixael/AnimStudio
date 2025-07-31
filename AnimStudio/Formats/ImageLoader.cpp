@@ -1,4 +1,5 @@
 #include "ImageLoader.h"
+#include "Custom Handlers/DdsHandler.h"
 #include "Custom Handlers/PcxHandler.h"
 #include "Custom Handlers/TgaHandler.h"
 
@@ -36,6 +37,23 @@ QImage ImageLoader::load(const QString& path) {
         QImage img;
         if (!handler.read(&img)) {
             qWarning() << "Failed to load TGA image:" << path;
+            return QImage();
+        }
+        return img;
+    }
+
+    if (path.endsWith(".dds", Qt::CaseInsensitive)) {
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly)) {
+            qWarning() << "DDS file could not be opened:" << path;
+            return QImage();
+        }
+
+        DdsHandler handler;
+        handler.setDevice(path);
+        QImage img;
+        if (!handler.read(&img)) {
+            qWarning() << "Failed to load DDS image:" << path;
             return QImage();
         }
         return img;
