@@ -97,7 +97,8 @@ AnimStudio is built on a set of powerful open-source libraries to support variou
 - **[zlib](https://zlib.net/)** – Compression library used by libpng  
 - **[libimagequant](https://pngquant.org/lib/)** (v2.x) – High-quality color quantization  
 - **[apngdisassembler](https://github.com/apng-dasm/apng-disassembler)** – Used to extract frames from APNG files  
-- **[apngasm](https://github.com/apngasm/apngasm)** – Used to assemble APNG files from individual frames  
+- **[apngasm](https://github.com/apngasm/apngasm)** – Used to assemble APNG files from individual frames
+- **[compressonator](https://github.com/GPUOpen-Tools/compressonator)** - Used to allow reading and writing of DDS files
 
 # Credits
 
