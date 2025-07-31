@@ -8,12 +8,7 @@ void RawExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-ExportResult RawExporter::exportCurrentFrame(
-    const AnimationData& data,
-    int frameIndex,
-    const QString& outputPath,
-    ImageFormat format,
-    bool updateProgress)
+ExportResult RawExporter::exportCurrentFrame(const AnimationData& data, int frameIndex, const QString& outputPath, ImageFormat format, bool updateProgress)
 {
     if (frameIndex < 0 || frameIndex >= data.frames.size())
         return ExportResult::fail(QString("Invalid frame index: %1. Total frames: %2.")
@@ -47,11 +42,11 @@ ExportResult RawExporter::exportCurrentFrame(
     return ExportResult::ok();
 }
 
-ExportResult RawExporter::exportAllFrames(
-    const AnimationData& data,
-    const QString& outputDir,
-    ImageFormat format)
+ExportResult RawExporter::exportAllFrames(const AnimationData& data, const QString& outputDir, ImageFormat format)
 {
+    if (m_progressCallback)
+        m_progressCallback(0.0f);
+    
     QDir dir(outputDir);
     if (!dir.exists()) {
         // fail immediately if user-picked folder doesn’t exist

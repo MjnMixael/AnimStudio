@@ -152,6 +152,10 @@ QByteArray compressScanlineHoffossRLE(const uchar* scanline, int width) {
  * @return True if the export was successful, false otherwise.
  */
 ExportResult AniExporter::exportAnimation(const AnimationData& data, const QString& aniPath, QString name) {
+
+    if (m_progressCallback)
+        m_progressCallback(0.0f);
+
     // Construct the full file path: aniPath (directory) + data.baseName + ".ani"
     QString fullAniFilePath = QDir(aniPath).filePath(name + ".ani");
 

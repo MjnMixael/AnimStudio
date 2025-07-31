@@ -12,10 +12,11 @@ void ApngExporter::setProgressCallback(std::function<void(float)> cb) {
     m_progressCallback = std::move(cb);
 }
 
-ExportResult ApngExporter::exportAnimation(const AnimationData& data,
-    const QString& path,
-    QString name)
+ExportResult ApngExporter::exportAnimation(const AnimationData& data, const QString& path, QString name)
 {
+    if (m_progressCallback)
+        m_progressCallback(0.0f);
+    
     if (data.frames.isEmpty()) {
         return ExportResult::fail("No frames to export.");
     }

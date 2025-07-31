@@ -34,6 +34,9 @@ ExportResult writeEffFile(const AnimationData& data,
 
 ExportResult EffExporter::exportAnimation(const AnimationData& data, const QString& outputDir, ImageFormat fmt, QString name)
 {
+    if (m_progressCallback)
+        m_progressCallback(0.0f);
+    
     // Create subfolder named after name
     QDir parentDir(outputDir);
     QString subName = name;
