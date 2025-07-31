@@ -245,6 +245,14 @@ void AnimStudio::on_nextFrameButton_clicked() {
     int max = ui.timelineSlider->maximum();
     if (current < max) {
         animCtrl->seekFrame(current + 1);
+    } else {
+        if (animCtrl->getAllKeyframesActive()) {
+            // If all keyframes are active, loop back to the start
+            animCtrl->seekFrame(0);
+        } else if (animCtrl->getLoopPoint() > 0) {
+            // If not all keyframes are active, jump to the loop point
+            animCtrl->seekFrame(animCtrl->getLoopPoint());
+        }
     }
 }
 
