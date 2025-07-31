@@ -296,13 +296,13 @@ void AnimStudio::updateFrameTimeDisplay() {
     }
 
     // zero based
-    int idx = ui.timelineSlider->value() - 1;
-    int total = animCtrl->getFrameCount() - 1;
+    int idx = ui.timelineSlider->value() ;
+    int total = animCtrl->getFrameCount() ;
     int fps = animCtrl->getFPS();
 
     // — Frame X/Y —
     ui.currentFrameView->setText(
-        QString("%1/%2").arg(idx + 1).arg(total)
+        QString("%1/%2").arg(idx).arg(total - 1)
     );
 
     // — Timecode mm:ss.mmm —
