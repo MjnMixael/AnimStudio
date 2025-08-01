@@ -287,7 +287,7 @@ void CMP_calcMSE_PSNRb(MipLevel* pCurMipLevel, CMP_BYTE* pdata1, CMP_BYTE* pdata
             // Red channel
             if (RGBAChannels & 0b0001)
             {
-                mse = powf(abs(*pdata1 - *pdata2), 2);
+                mse = powf(static_cast<float>(abs(*pdata1 - *pdata2)), 2);
                 mseR += mse;
                 mseRGBA += mse;
                 totalPixelsR++;
@@ -298,7 +298,7 @@ void CMP_calcMSE_PSNRb(MipLevel* pCurMipLevel, CMP_BYTE* pdata1, CMP_BYTE* pdata
             // Green channel
             if (RGBAChannels & 0b0010)
             {
-                mse = powf(abs(*pdata1 - *pdata2), 2);
+                mse = powf(static_cast<float>(abs(*pdata1 - *pdata2)), 2);
                 mseG += mse;
                 mseRGBA += mse;
                 totalPixelsG++;
@@ -309,7 +309,7 @@ void CMP_calcMSE_PSNRb(MipLevel* pCurMipLevel, CMP_BYTE* pdata1, CMP_BYTE* pdata
             // Blue channel
             if (RGBAChannels & 0b0100)
             {
-                mse = powf(abs(*pdata1 - *pdata2), 2);
+                mse = powf(static_cast<float>(abs(*pdata1 - *pdata2)), 2);
                 mseB += mse;
                 mseRGBA += mse;
                 totalPixelsB++;
@@ -320,7 +320,7 @@ void CMP_calcMSE_PSNRb(MipLevel* pCurMipLevel, CMP_BYTE* pdata1, CMP_BYTE* pdata
             // Alpha channel
             if (RGBAChannels & 0b1000)
             {
-                mse = powf(abs(*pdata1 - *pdata2), 2);
+                mse = powf(static_cast<float>(abs(*pdata1 - *pdata2)), 2);
                 mseA += mse;
                 mseRGBA += mse;
                 totalPixelsA++;
@@ -386,7 +386,7 @@ void CMP_calcMSE_PSNR1010102(MipLevel* pCurMipLevel, CMP_DWORD* buffer1, CMP_DWO
     CMP_INT   totalPixelsA = 0;
     CMP_INT   totalPixels  = 0;
 
-    for (uint32_t i = 0; i < pCurMipLevel->m_nHeight * pCurMipLevel->m_nWidth; ++i)
+    for (uint32_t i = 0; i < static_cast<uint32_t>(pCurMipLevel->m_nHeight) * static_cast<uint32_t>(pCurMipLevel->m_nWidth); ++i)
     {
         // calc Gamma for the all active channels
         // Red channel
@@ -395,7 +395,7 @@ void CMP_calcMSE_PSNR1010102(MipLevel* pCurMipLevel, CMP_DWORD* buffer1, CMP_DWO
             int32_t r1 = RGBA1010102_GET_R(buffer1[i]);
             int32_t r2 = RGBA1010102_GET_R(buffer2[i]);
 
-            mse = powf(abs(r1 - r2), 2);
+            mse = powf(static_cast<float>(abs(r1 - r2)), 2);
             mseR += mse;
             mseRGBA += mse;
             totalPixelsR++;
@@ -408,7 +408,7 @@ void CMP_calcMSE_PSNR1010102(MipLevel* pCurMipLevel, CMP_DWORD* buffer1, CMP_DWO
             int32_t g1 = RGBA1010102_GET_G(buffer1[i]);
             int32_t g2 = RGBA1010102_GET_G(buffer2[i]);
 
-            mse = powf(abs(g1 - g2), 2);
+            mse = powf(static_cast<float>(abs(g1 - g2)), 2);
             mseG += mse;
             mseRGBA += mse;
             totalPixelsG++;
@@ -421,7 +421,7 @@ void CMP_calcMSE_PSNR1010102(MipLevel* pCurMipLevel, CMP_DWORD* buffer1, CMP_DWO
             int32_t b1 = RGBA1010102_GET_B(buffer1[i]);
             int32_t b2 = RGBA1010102_GET_B(buffer2[i]);
 
-            mse = powf(abs(b1 - b2), 2);
+            mse = powf(static_cast<float>(abs(b1 - b2)), 2);
             mseB += mse;
             mseRGBA += mse;
             totalPixelsB++;
@@ -434,7 +434,7 @@ void CMP_calcMSE_PSNR1010102(MipLevel* pCurMipLevel, CMP_DWORD* buffer1, CMP_DWO
             int32_t a1 = RGBA1010102_GET_A(buffer1[i]);
             int32_t a2 = RGBA1010102_GET_A(buffer2[i]);
 
-            mse = powf(abs(a1 - a2), 2);
+            mse = powf(static_cast<float>(abs(a1 - a2)), 2);
             mseA += mse;
             mseRGBA += mse;
             totalPixelsA++;
@@ -566,11 +566,11 @@ void CMP_calcMSE_PSNRHalfShort(MipLevel* pCurMipLevel, CMP_HALFSHORT* pdata1, CM
         totalPixels = 1;
     }
 
-    pAnalysisData->mse  = mseRGBA / totalPixels;
-    pAnalysisData->mseR = mseR / totalPixelsR;
-    pAnalysisData->mseG = mseG / totalPixelsG;
-    pAnalysisData->mseB = mseB / totalPixelsB;
-    pAnalysisData->mseA = mseA / totalPixelsA;
+    pAnalysisData->mse  = static_cast<float>(mseRGBA / totalPixels);
+    pAnalysisData->mseR = static_cast<float>(mseR / totalPixelsR);
+    pAnalysisData->mseG = static_cast<float>(mseG / totalPixelsG);
+    pAnalysisData->mseB = static_cast<float>(mseB / totalPixelsB);
+    pAnalysisData->mseA = static_cast<float>(mseA / totalPixelsA);
 
     if (pAnalysisData->mse <= 0.0)
     {
@@ -589,15 +589,15 @@ void CMP_calcMSE_PSNRHalfShort(MipLevel* pCurMipLevel, CMP_HALFSHORT* pdata1, CM
     else
     {
         if (pAnalysisData->mse > 0.0)
-            pAnalysisData->psnr = 10 * log((1.0 * 255 * 255) / pAnalysisData->mse) / log(10.0);
+            pAnalysisData->psnr = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mse) / log(10.0));
         if (pAnalysisData->mseR > 0.0)
-            pAnalysisData->psnrR = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseR) / log(10.0);
+            pAnalysisData->psnrR = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseR) / log(10.0));
         if (pAnalysisData->mseG > 0.0)
-            pAnalysisData->psnrG = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseG) / log(10.0);
+            pAnalysisData->psnrG = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseG) / log(10.0));
         if (pAnalysisData->mseB > 0.0)
-            pAnalysisData->psnrB = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseB) / log(10.0);
+            pAnalysisData->psnrB = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseB) / log(10.0));
         if (pAnalysisData->mseA > 0.0)
-            pAnalysisData->psnrA = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseA) / log(10.0);
+            pAnalysisData->psnrA = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseA) / log(10.0));
     }
 }
 
@@ -673,11 +673,11 @@ void CMP_calcMSE_PSNRf32(MipLevel* pCurMipLevel, CMP_FLOAT* pdata1, CMP_FLOAT* p
         totalPixels = 1;
     }
 
-    pAnalysisData->mse  = mseRGBA / totalPixels;
-    pAnalysisData->mseR = mseR / totalPixelsR;
-    pAnalysisData->mseG = mseG / totalPixelsG;
-    pAnalysisData->mseB = mseB / totalPixelsB;
-    pAnalysisData->mseA = mseA / totalPixelsA;
+    pAnalysisData->mse  = static_cast<float>(mseRGBA / totalPixels);
+    pAnalysisData->mseR = static_cast<float>(mseR / totalPixelsR);
+    pAnalysisData->mseG = static_cast<float>(mseG / totalPixelsG);
+    pAnalysisData->mseB = static_cast<float>(mseB / totalPixelsB);
+    pAnalysisData->mseA = static_cast<float>(mseA / totalPixelsA);
 
     if (pAnalysisData->mse <= 0.0)
     {
@@ -695,15 +695,15 @@ void CMP_calcMSE_PSNRf32(MipLevel* pCurMipLevel, CMP_FLOAT* pdata1, CMP_FLOAT* p
     else
     {
         if (pAnalysisData->mse > 0.0)
-            pAnalysisData->psnr = 10 * log((1.0 * 255 * 255) / pAnalysisData->mse) / log(10.0);
+            pAnalysisData->psnr = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mse) / log(10.0));
         if (pAnalysisData->mseR > 0.0)
-            pAnalysisData->psnrR = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseR) / log(10.0);
+            pAnalysisData->psnrR = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseR) / log(10.0));
         if (pAnalysisData->mseG > 0.0)
-            pAnalysisData->psnrG = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseG) / log(10.0);
+            pAnalysisData->psnrG = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseG) / log(10.0));
         if (pAnalysisData->mseB > 0.0)
-            pAnalysisData->psnrB = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseB) / log(10.0);
+            pAnalysisData->psnrB = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseB) / log(10.0));
         if (pAnalysisData->mseA > 0.0)
-            pAnalysisData->psnrA = 10 * log((1.0 * 255 * 255) / pAnalysisData->mseA) / log(10.0);
+            pAnalysisData->psnrA = static_cast<float>(10 * log((1.0 * 255 * 255) / pAnalysisData->mseA) / log(10.0));
     }
 }
 

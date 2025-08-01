@@ -1518,7 +1518,7 @@ static float MapToF16(float f, bool isSigned)
     }
     else if (isSigned && f < 0.0f)
     {
-        result = -CMP_HALF(abs(f / normalization)).bits();
+        result = -static_cast<float>(CMP_HALF(abs(f / normalization)).bits());
     }
     else
     {

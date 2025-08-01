@@ -205,7 +205,7 @@ bool CCodecBuffer_RGB888S::ReadBlockRGBA(CMP_DWORD x, CMP_DWORD y, CMP_BYTE w, C
             *pDestData++ = *pSrcData++;
             *pDestData++ = *pSrcData++;
             *pDestData++ = *pSrcData++;
-            *pDestData++ = 0xff;
+            *pDestData++ = static_cast<CMP_SBYTE>(0xff);
         }
 
         // Pad block with previous values if necessary

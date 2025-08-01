@@ -221,7 +221,7 @@ void GenerateMipmapLevel(MipLevel* currMipLevel, MipLevel** prevMipLevels, uint3
     const uint32_t numPixelsPerBlock = sizeof(levels[0].pixels) / sizeof(levels[0].pixels[0]);
     const uint32_t totalNumPixels    = numPrevLevels * numPixelsPerBlock;
 
-    for (uint32_t y = 0; y < currMipLevel->m_nHeight; ++y)
+    for (uint32_t y = 0; y < static_cast<uint32_t>(currMipLevel->m_nHeight); ++y)
     {
         // update all of the previous layer pixel pointers
         for (uint32_t i = 0; i < numPrevLevels; ++i)
@@ -241,7 +241,7 @@ void GenerateMipmapLevel(MipLevel* currMipLevel, MipLevel** prevMipLevels, uint3
             }
         }
 
-        for (uint32_t x = 0; x < currMipLevel->m_nWidth; ++x)
+        for (uint32_t x = 0; x < static_cast<uint32_t>(currMipLevel->m_nWidth); ++x)
         {
             if (format == CMP_FORMAT_RGBA_1010102)
             {
