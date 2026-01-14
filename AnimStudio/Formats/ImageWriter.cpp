@@ -47,6 +47,11 @@ bool ImageWriter::write(const QImage& image, const QString& path, ImageFormat fm
 
     QString ext = extensionForFormat(fmt);
 
+    // QImageWriter expects an extension format without a leading '.'
+    if (ext.startsWith('.')) {
+        ext.remove(0, 1);
+    }
+
     QImageWriter writer(path);
     writer.setFormat(ext.toUtf8());
     return writer.write(image);
