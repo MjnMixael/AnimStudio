@@ -48,13 +48,10 @@ void ExportAnimationDialog::onTypeChanged(int index)
     ui->formatComboBox->setEnabled(type == "eff");
     ui->compressionComboBox->setEnabled(type == "eff" && format == "dds");
 
-    if (type == "apng") {
-        ui->warningLabel->setText("Be aware that APNGs do not support special loop keyframes. If set, the keyframe will be ignored.");
-        ui->warningLabel->setVisible(true);
-    } else {
-        ui->warningLabel->clear();
-        ui->warningLabel->setVisible(false);
-    }
+    // APNG now carries the loop keyframe as an FSO.Keyframe iTXt chunk, so no
+    // keyframe warning is needed for any format.
+    ui->warningLabel->clear();
+    ui->warningLabel->setVisible(false);
 }
 
 void ExportAnimationDialog::onFormatChanged(int index)

@@ -50,7 +50,7 @@ namespace apngasm {
          */
 		~APNGAsm(void);
 
-        /** Register a 0->1 progress callback (you’ll call this from your exporter) */
+        /** Register a 0->1 progress callback (youï¿½ll call this from your exporter) */
         void setProgressCallback(std::function<void(float)> cb);
 
         /**
@@ -119,6 +119,14 @@ namespace apngasm {
         void setSkipFirst(bool skipFirst);
 
         /**
+         * @brief Set the FSO loop keyframe stored as an "FSO.Keyframe" iTXt chunk.
+         * @param frame The frame index to loop back to. A negative value disables
+         *        the chunk (nothing is written). See parse_fso_keyframe_itxt in
+         *        FreeSpaceOpen's pngutils for the reader side of this contract.
+         */
+        void setKeyframe(int frame);
+
+        /**
          * @brief Returns the frame vector.
          * @return Returns the frame vector.
          */
@@ -163,6 +171,9 @@ namespace apngasm {
 
     // Flag of skip first frame.
     bool _skipFirst;
+
+    // FSO loop keyframe to write as an "FSO.Keyframe" iTXt chunk (<0 == none).
+    int _keyframe;
 
     // Progress callback
     std::function<void(float)> _progressCallback;

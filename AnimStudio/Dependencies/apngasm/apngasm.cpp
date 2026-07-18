@@ -1,5 +1,7 @@
 #include "apngasm.h"
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <filesystem>
 #include <functional>
 #include <png.h>
@@ -43,6 +45,7 @@ namespace apngasm {
   APNGAsm::APNGAsm(void)
     : _loops(0)
     , _skipFirst(false)
+    , _keyframe(-1)
   {
     // nop
   }
@@ -51,6 +54,7 @@ namespace apngasm {
   APNGAsm::APNGAsm(const std::vector<APNGFrame> &frames)
     : _loops(0)
     , _skipFirst(false)
+    , _keyframe(-1)
   {
     _frames.insert(_frames.end(), frames.begin(), frames.end());
   }
@@ -149,6 +153,12 @@ namespace apngasm {
   void APNGAsm::setSkipFirst(bool skipFirst)
   {
     _skipFirst = skipFirst;
+  }
+
+  // Set the FSO loop keyframe (<0 == none).
+  void APNGAsm::setKeyframe(int frame)
+  {
+    _keyframe = frame;
   }
 
   //Assembles and outputs an APNG file
@@ -1096,6 +1106,13 @@ namespace apngasm {
       unsigned int den = _frames[n]._delayDen;
       _frames.erase(_frames.begin()+n);
 
+      // Keep the FSO loop keyframe pointing at the correct surviving frame:
+      // erasing the frame at position n shifts every later frame down by one.
+      // A keyframe at position n merges into the survivor that now sits at n, so
+      // only strictly-later keyframes need adjusting.
+      if (_keyframe > static_cast<int>(n))
+        _keyframe--;
+
       if (_frames[n]._delayDen == den)
         _frames[n]._delayNum += num;
       else
@@ -1215,6 +1232,29 @@ namespace apngasm {
         write_chunk(f, "acTL", buf_acTL, 8);
       else
         first = 0;
+
+      // FSO loop keyframe metadata: an uncompressed "FSO.Keyframe" iTXt chunk
+      // holding the frame index to loop back to. Layout per the PNG spec:
+      //   keyword \0 comp_flag comp_method lang \0 translated \0 text
+      // The reader (FreeSpaceOpen parse_fso_keyframe_itxt) requires the text to
+      // be exactly the decimal integer with no trailing bytes.
+      if (_keyframe >= 0)
+      {
+        const char* itxt_keyword = "FSO.Keyframe";
+        char itxt_value[16];
+        int value_len = snprintf(itxt_value, sizeof(itxt_value), "%d", _keyframe);
+
+        std::vector<unsigned char> itxt;
+        itxt.insert(itxt.end(), itxt_keyword, itxt_keyword + strlen(itxt_keyword));
+        itxt.push_back(0);  // keyword null separator
+        itxt.push_back(0);  // compression flag (0 == uncompressed)
+        itxt.push_back(0);  // compression method
+        itxt.push_back(0);  // empty language tag + null separator
+        itxt.push_back(0);  // empty translated keyword + null separator
+        itxt.insert(itxt.end(), itxt_value, itxt_value + value_len);
+
+        write_chunk(f, "iTXt", itxt.data(), static_cast<unsigned int>(itxt.size()));
+      }
 
       if (_palsize > 0)
         write_chunk(f, "PLTE", (unsigned char *)(&_palette), _palsize*3);

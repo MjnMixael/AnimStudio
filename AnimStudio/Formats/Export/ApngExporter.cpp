@@ -44,13 +44,21 @@ ExportResult ApngExporter::exportAnimation(const AnimationData& data, const QStr
     builder.setLoops(0);       // 0 == infinite
     builder.setSkipFirst(false);
 
+    // Carry the loop keyframe across as an FSO.Keyframe iTXt chunk so FreeSpaceOpen
+    // (and our own importer) can loop back to it. Each frame in data.frames is
+    // written as exactly one APNG frame below, so loopPoint maps 1:1 to the APNG
+    // frame index. loopPoint 0 means "loop to start" (the default), so nothing to write.
+    if (data.hasLoopPoint && data.loopPoint > 0) {
+        builder.setKeyframe(data.loopPoint);
+    }
+
     // compute uniform per-frame delay = 1/data.fps
     unsigned num = 1;
     unsigned den = static_cast<unsigned>(data.fps);
     unsigned g = std::gcd(num, den);
     num /= g; den /= g;
 
-    // add each frame’s RGBA buffer
+    // add each frameï¿½s RGBA buffer
     int count = 0;
     for (const auto& frame : data.frames) {
         QImage img = frame.image;
