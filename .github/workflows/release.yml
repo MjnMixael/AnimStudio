@@ -104,3 +104,73 @@ jobs:
           draft: false
           prerelease: false
           generate_release_notes: true
+
+  # Open a pull request against the Knossos tool repo to point it at the new
+  # release. Runs only on a real tag, only after the Windows build/publish
+  # succeeded, and only if the KNOSSOS_PAT secret is configured (so forks and
+  # contributors without the token simply skip it instead of failing).
+  knossos-pr:
+    name: Propose Knossos update
+    needs: windows
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check for token
+        id: gate
+        env:
+          KNOSSOS_PAT: ${{ secrets.KNOSSOS_PAT }}
+        run: |
+          if [ -n "$KNOSSOS_PAT" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::KNOSSOS_PAT secret not set — skipping Knossos PR."
+          fi
+
+      - name: Checkout Knossos tool repo (upstream)
+        if: steps.gate.outputs.enabled == 'true'
+        uses: actions/checkout@v4
+        with:
+          repository: KnossosNET/Knet-Tool-Repo
+          ref: main
+          token: ${{ secrets.KNOSSOS_PAT }}
+          path: knossos
+
+      - name: Update knet_tools.json
+        if: steps.gate.outputs.enabled == 'true'
+        working-directory: knossos
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"          # e.g. V1.3.0
+          VER="${TAG#V}"                     # e.g. 1.3.0
+          DATE="$(date -u +%F)"
+          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/AnimStudio-${TAG}-win64.zip"
+          jq --arg ver "$VER" --arg date "$DATE" --arg url "$URL" '
+            map(if .name == "AnimStudio" then
+                  .version = $ver
+                  | .last_update = $date
+                  | .packages = [ .packages[]
+                      | if .os == "windows" then .download_url = $url else . end ]
+                else . end)
+          ' knet_tools.json > knet_tools.json.tmp
+          mv knet_tools.json.tmp knet_tools.json
+          git --no-pager diff -- knet_tools.json
+
+      - name: Create pull request
+        if: steps.gate.outputs.enabled == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.KNOSSOS_PAT }}
+          path: knossos
+          push-to-fork: MjnMixael/Knet-Tool-Repo
+          branch: animstudio-${{ github.ref_name }}
+          base: main
+          commit-message: "Update AnimStudio to ${{ github.ref_name }}"
+          title: "Update AnimStudio to ${{ github.ref_name }}"
+          body: |
+            Automated update of **AnimStudio** to `${{ github.ref_name }}`.
+
+            - Release: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+
+            Opened automatically by the AnimStudio release workflow.
+          delete-branch: true
