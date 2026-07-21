@@ -139,21 +139,56 @@ jobs:
       - name: Update knet_tools.json
         if: steps.gate.outputs.enabled == 'true'
         working-directory: knossos
+        env:
+          TAG: ${{ github.ref_name }}
+          DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-win64.zip
         run: |
           set -euo pipefail
-          TAG="${GITHUB_REF_NAME}"          # e.g. V1.3.0
-          VER="${TAG#V}"                     # e.g. 1.3.0
-          DATE="$(date -u +%F)"
-          URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/AnimStudio-${TAG}-win64.zip"
-          jq --arg ver "$VER" --arg date "$DATE" --arg url "$URL" '
-            map(if .name == "AnimStudio" then
-                  .version = $ver
-                  | .last_update = $date
-                  | .packages = [ .packages[]
-                      | if .os == "windows" then .download_url = $url else . end ]
-                else . end)
-          ' knet_tools.json > knet_tools.json.tmp
-          mv knet_tools.json.tmp knet_tools.json
+          export DATE="$(date -u +%F)"
+          # Surgical, minimal-diff edit: only the AnimStudio entry's version,
+          # last_update and download_url change. We splice inside that one JSON
+          # object's braces rather than re-serialize the whole file, so the rest
+          # of knet_tools.json (which has inconsistent indentation) is untouched.
+          python3 - "knet_tools.json" <<'PY'
+          import io, os, re, json, sys
+          path = sys.argv[1]
+          tag  = os.environ["TAG"]
+          ver  = tag[1:] if tag.startswith("V") else tag
+          date = os.environ["DATE"]
+          url  = os.environ["DOWNLOAD_URL"]
+
+          s = io.open(path, encoding="utf-8").read()
+          m = re.search(r'"name"\s*:\s*"AnimStudio"', s)
+          if not m:
+              sys.exit("AnimStudio entry not found")
+          start = s.rfind("{", 0, m.start())
+          depth, i, end = 0, start, None
+          while i < len(s):
+              if s[i] == "{":
+                  depth += 1
+              elif s[i] == "}":
+                  depth -= 1
+                  if depth == 0:
+                      end = i + 1
+                      break
+              i += 1
+          if end is None:
+              sys.exit("could not find end of AnimStudio object")
+
+          block = s[start:end]
+          block = re.sub(r'("version"\s*:\s*)"[^"]*"',      r'\g<1>"%s"' % ver,  block, count=1)
+          block = re.sub(r'("last_update"\s*:\s*)"[^"]*"',  r'\g<1>"%s"' % date, block, count=1)
+          block = re.sub(r'("download_url"\s*:\s*)"[^"]*"', r'\g<1>"%s"' % url,  block, count=1)
+          s2 = s[:start] + block + s[end:]
+
+          data = json.loads(s2)  # fail loudly if we produced invalid JSON
+          a = [e for e in data if e.get("name") == "AnimStudio"][0]
+          assert a["version"] == ver, a["version"]
+          assert a["last_update"] == date, a["last_update"]
+          assert a["packages"][0]["download_url"] == url, a["packages"][0]["download_url"]
+
+          io.open(path, "w", encoding="utf-8", newline="").write(s2)
+          PY
           git --no-pager diff -- knet_tools.json
 
       - name: Create pull request
