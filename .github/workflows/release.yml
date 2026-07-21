@@ -37,18 +37,25 @@ jobs:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
 
-      - name: Setup NuGet
-        uses: nuget/setup-nuget@v2
-
-      - name: Install Qt VS Tools MSBuild integration (QtMsBuild)
+      - name: Fetch Qt VS Tools MSBuild integration (QtMsBuild)
         shell: pwsh
+        env:
+          VSADDIN_VERSION: '3.4.1'
         run: |
-          # The .vcxproj was authored by Qt VS Tools and imports qt.targets /
-          # Qt.props from $(QtMsBuild). That integration ships in this NuGet
-          # package; point QtMsBuild at it so the project imports resolve.
-          nuget install Qt.QtMsBuild -OutputDirectory nuget -ExcludeVersion
-          "QtMsBuild=$env:GITHUB_WORKSPACE\nuget\Qt.QtMsBuild\QtMsBuild" `
-            | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          # The .vcxproj was authored by Qt VS Tools and imports Qt.props /
+          # qt.targets from $(QtMsBuild). Those (fully generated) files ship
+          # inside the Qt VS Tools add-in .vsix, which is just a zip. Extract
+          # the QtMSBuild folder and point $(QtMsBuild) at it so the project's
+          # imports resolve without the VS extension being installed.
+          $ver = $env:VSADDIN_VERSION
+          $url = "https://download.qt.io/official_releases/vsaddin/$ver/qt-vsaddin-msvc2022-x64-$ver.vsix"
+          Invoke-WebRequest -Uri $url -OutFile qtvsaddin.zip
+          Expand-Archive -Path qtvsaddin.zip -DestinationPath qtvsaddin -Force
+          $qtmsbuild = Join-Path $PWD "qtvsaddin\QtMSBuild"
+          if (-not (Test-Path "$qtmsbuild\qt.targets")) {
+            throw "QtMSBuild not found at $qtmsbuild"
+          }
+          "QtMsBuild=$qtmsbuild" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build (Release|x64)
         shell: pwsh
