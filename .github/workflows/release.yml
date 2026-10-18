@@ -17,7 +17,7 @@ permissions:
 jobs:
   windows:
     name: Windows (x64)
-    runs-on: windows-2022
+    runs-on: windows-2025
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,7 +64,7 @@ jobs:
           # install (…/Qt/6.8.3/msvc2022_64). QtMsBuild accepts a full path in
           # QtInstall, bypassing the machine-registered-version lookup that the
           # local .vcxproj relies on.
-          msbuild AnimStudio.sln `
+          msbuild AnimStudio.slnx `
             /m `
             /p:Configuration=Release `
             /p:Platform=x64 `
