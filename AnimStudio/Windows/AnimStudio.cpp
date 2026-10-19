@@ -7,7 +7,7 @@
 #include "Formats/Import/ApngImporter.h"
 #include "Formats/Import/EffImporter.h"
 #include "Formats/Import/RawImporter.h"
-#include "Widgets/spinnerwidget.h"
+#include "Widgets/SpinnerWidget.h"
 #include "Windows/ReduceColors.h"
 #include "Windows/ExportAnimation.h"
 
@@ -217,7 +217,7 @@ void AnimStudio::toggleToolebarControls() {
 }
 
 void AnimStudio::on_playPauseButton_clicked() {
-    // Toggle based on the button’s current label
+    // Toggle based on the buttonï¿½s current label
     if (animCtrl->isPlaying()) {
         animCtrl->pause();
     } else {
@@ -308,12 +308,12 @@ void AnimStudio::updateFrameTimeDisplay() {
     int total = animCtrl->getFrameCount() ;
     int fps = animCtrl->getFPS();
 
-    // — Frame X/Y —
+    // ï¿½ Frame X/Y ï¿½
     ui.currentFrameView->setText(
         QString("%1/%2").arg(idx).arg(total - 1)
     );
 
-    // — Timecode mm:ss.mmm —
+    // ï¿½ Timecode mm:ss.mmm ï¿½
     double seconds = idx / double(fps);
     int wholeSec = int(seconds);
     int mins = wholeSec / 60;
@@ -492,7 +492,7 @@ void AnimStudio::on_actionExport_All_Frames_triggered()
 
 void AnimStudio::on_actionExport_Current_Frame_triggered()
 {
-    // Build a list of “PNG Images (*.png)” etc. from availableExtensions()
+    // Build a list of ï¿½PNG Images (*.png)ï¿½ etc. from availableExtensions()
     QStringList extList = availableExtensions();  // e.g. ["png","jpg","tga","pcx","dds"]
     QStringList filterEntries;
     for (const QString& e : extList) {
@@ -500,7 +500,7 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
     }
     filterEntries << "All Files (*.*)";
 
-    // 2) Join them with the “;;” separator that Qt expects
+    // 2) Join them with the ï¿½;;ï¿½ separator that Qt expects
     QString filter = filterEntries.join(";;");
 
     int frameCount = animCtrl->getFrameCount();      // total frames
@@ -548,7 +548,7 @@ void AnimStudio::on_actionExport_Current_Frame_triggered()
     m_taskRunning = true;
     toggleToolebarControls();
 
-    // dispatch to controller – make sure your controller method
+    // dispatch to controller ï¿½ make sure your controller method
     // signature matches: (const QString&, Format)
     animCtrl->exportCurrentFrame(filePath, formatFromExtension(ext), cFormat);
 }
@@ -570,7 +570,7 @@ void AnimStudio::on_actionReduce_Colors_triggered()
             ui.actionShow_Reduced_Colors->setChecked(false);
             ui.actionShow_Reduced_Colors->setEnabled(false);
 
-            // pull the user’s choice from the dialog
+            // pull the userï¿½s choice from the dialog
             animCtrl->quantize(dlg.selectedPalette(), dlg.getQuality(), dlg.getMaxColors(), dlg.useTransparencyOverride());
         });
     dlg.exec();
