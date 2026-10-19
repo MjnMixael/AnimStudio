@@ -131,3 +131,4 @@ AnimStudio is built on a set of powerful open-source libraries to support variou
 
 AnimStudio is developed by MjnMixael.
 Based on years of experience working with FreeSpace Open assets and animation formats.
+Licensed under the GNU GPL v3. See [LICENSE](LICENSE).
