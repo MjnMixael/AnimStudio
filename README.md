@@ -30,6 +30,33 @@ AnimStudio uses [QT Designer](https://www.qt.io/product/ui-design-tools) for it'
 - Cross-platform (Windows/Linux) and fast, native performance
 - Command-line batch conversion support
 
+## Building
+
+AnimStudio builds with CMake and Qt 6.8.3 (Core, Gui, Widgets, Concurrent, plus the qtimageformats plugins). It builds on Windows (MSVC) and Linux (GCC/Clang); the GitHub Actions workflow builds and packages both.
+
+### Requirements
+
+- CMake 3.21+
+- Qt 6.8.3, including the `qtimageformats` module
+- A C++17 compiler — MSVC (Visual Studio 2026) on Windows, GCC or Clang on Linux
+
+### Visual Studio 2026
+
+Generate the solution against your Qt install, then open it:
+
+```bash
+cmake -S . -B build/vs2026 -G "Visual Studio 18 2026" -A x64 -DCMAKE_PREFIX_PATH=C:/Qt6/6.8.3/msvc2022_64
+```
+
+Open `build\vs2026\AnimStudio.slnx` and build/run with F5 (AnimStudio is the default startup project). Alternatively, use **File → Open → Folder** on the repo root — VS reads `CMakePresets.json` directly.
+
+### Command line (Linux or Windows)
+
+```bash
+cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/path/to/Qt/6.8.3/gcc_64
+cmake --build build
+```
+
 ## Usage (GUI)
 
 <img src="AnimStudio/Preview.png">
