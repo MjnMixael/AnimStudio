@@ -248,6 +248,10 @@ target_compile_features(AnimStudio PRIVATE cxx_std_17)
 set_target_properties(AnimStudio PROPERTIES
     AUTOUIC_SEARCH_PATHS "${CMAKE_CURRENT_SOURCE_DIR}/AnimStudio/Forms")
 
+# Make F5 in the generated VS solution launch the app, not the non-runnable
+# ALL_BUILD utility target (ignored by non-VS generators).
+set_property(DIRECTORY PROPERTY VS_STARTUP_PROJECT AnimStudio)
+
 # Match the old project include paths; AnimStudio/ lets app sources and the
 # resource compiler resolve their own headers by bare name.
 target_include_directories(AnimStudio PRIVATE
