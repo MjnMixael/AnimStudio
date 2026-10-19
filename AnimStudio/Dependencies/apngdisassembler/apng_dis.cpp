@@ -30,8 +30,10 @@
 
  // This version has been modified for use in AnimStudio in order to load APNGs only into our custom AnimationData structure.
 
+#ifdef _WIN32
 #include <windows.h>
 #include <commctrl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -73,7 +75,9 @@ struct Image
   void free() { delete[] rows; delete[] p; }
 };
 
-extern HWND  hMainDlg;
+#ifdef _WIN32
+extern HWND  hMainDlg;   // vestigial from the original GUI tool; unused here
+#endif
 
 const unsigned long cMaxPNGSize = 16384UL;
 

@@ -1,6 +1,13 @@
 # Visual Studio per-user solution state (.suo, browse/symbol DBs,
-# window layout, file indices, Copilot caches) — all VS versions.
+# window layout, file indices, Copilot caches) - all VS versions.
 .vs/
 
-# Build output
+# Legacy MSBuild output
 x64/
+
+# CMake build trees (CMakePresets uses build/<preset>; VS "Open Folder" uses out/)
+build/
+out/
+
+# Per-developer CMake presets (e.g. local Qt path via CMAKE_PREFIX_PATH)
+CMakeUserPresets.json
