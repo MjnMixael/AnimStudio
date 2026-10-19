@@ -4,6 +4,12 @@
 #include <QFileInfo>
 #include <QTextStream>
 #include <QSplashScreen>
+#include <QPainter>
+#include <QPainterPath>
+#include <QLinearGradient>
+#include <QScreen>
+#include <QElapsedTimer>
+#include <QThread>
 
 #include "Windows/AnimStudio.h"
 #include "Animation/AnimationController.h"
@@ -15,7 +21,64 @@
 #include <windows.h>
 #endif
 
+// A composed splash: a dark rounded card with the reel mark on the left and
+// the title/subtitle on the right, plus a maroon accent drawn from the logo.
+static QPixmap makeSplashPixmap()
+{
+    const QSize size(480, 270);
+    const qreal ratio = QGuiApplication::primaryScreen()
+        ? QGuiApplication::primaryScreen()->devicePixelRatio() : 1.0;
+
+    QPixmap pixmap(size * ratio);
+    pixmap.setDevicePixelRatio(ratio);
+    pixmap.fill(Qt::transparent);
+
+    QPainter p(&pixmap);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHint(QPainter::SmoothPixmapTransform);
+
+    const QRectF card(0, 0, size.width(), size.height());
+    QPainterPath clip;
+    clip.addRoundedRect(card, 14, 14);
+    p.setClipPath(clip);
+
+    QLinearGradient bg(card.topLeft(), card.bottomRight());
+    bg.setColorAt(0, QColor(0x2B, 0x32, 0x3A));
+    bg.setColorAt(1, QColor(0x17, 0x1B, 0x20));
+    p.fillRect(card, bg);
+
+    // Brand maroon accent strip down the left edge.
+    p.fillRect(QRectF(0, 0, 6, size.height()), QColor(0x8B, 0x4A, 0x52));
+
+    // Reel mark (transparent PNG) on the left.
+    const QPixmap icon(":/AnimStudio/Resources/icon.png");
+    const int s = 150;
+    p.drawPixmap(QRect(36, (size.height() - s) / 2, s, s), icon);
+
+    // Title.
+    QFont title = p.font();
+    title.setPixelSize(44);
+    title.setBold(true);
+    p.setFont(title);
+    p.setPen(Qt::white);
+    p.drawText(QRect(208, 84, 258, 56), Qt::AlignLeft | Qt::AlignVCenter, "AnimStudio");
+
+    // Subtitle.
+    QFont subtitle = p.font();
+    subtitle.setPixelSize(14);
+    subtitle.setBold(false);
+    p.setFont(subtitle);
+    p.setPen(QColor(0xAA, 0xB2, 0xC0));
+    p.drawText(QRect(210, 140, 252, 44), Qt::AlignLeft | Qt::TextWordWrap,
+        QCoreApplication::translate("main",
+            "Animation creation & conversion\nfor FreeSpace Open"));
+
+    p.end();
+    return pixmap;
+}
+
 void clearConsoleLine() {
+#ifdef _WIN32
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     if (hOut == INVALID_HANDLE_VALUE) return;
 
@@ -28,6 +91,7 @@ void clearConsoleLine() {
 
     FillConsoleOutputCharacter(hOut, ' ', lineWidth, start, &written);
     SetConsoleCursorPosition(hOut, start);
+#endif
 }
 
 bool isBatchMode(const QStringList& args) {
@@ -282,12 +346,14 @@ int main(int argc, char* argv[])
         return runBatchMode(app);
     }
 
-    QSplashScreen* splash = new QSplashScreen;
-    splash->setPixmap(QPixmap(":/AnimStudio/Resources/logo.png"));
+    QSplashScreen* splash = new QSplashScreen(makeSplashPixmap());
     splash->show();
+    splash->showMessage(QCoreApplication::translate("main", "Loading..."),
+        Qt::AlignLeft | Qt::AlignBottom, QColor(0xAA, 0xB2, 0xC0));
     app.processEvents();
 
-    QThread::sleep(1);
+    QElapsedTimer splashTimer;
+    splashTimer.start();
 
     QString fileToOpen;
     if (args.size() >= 2 && QFileInfo::exists(args.at(1))) {
@@ -295,8 +361,14 @@ int main(int argc, char* argv[])
     }
 
     AnimStudio window;
-    window.show();
 
+    // Keep the splash up long enough to read even on a fast start.
+    const qint64 remaining = 900 - splashTimer.elapsed();
+    if (remaining > 0) {
+        QThread::msleep(static_cast<unsigned long>(remaining));
+    }
+
+    window.show();
     splash->finish(&window);
 
     if (!fileToOpen.isEmpty()) {

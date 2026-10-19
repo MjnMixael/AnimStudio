@@ -284,11 +284,14 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
 
             frame.image.setColorTable(customPalette_);
 
-            uchar* bits = img.bits();
-            int size = img.width() * img.height();
-
-            for (int i = 0; i < size; ++i) {
-                bits[i] = remap[bits[i]];
+            // Walk per scanline: Format_Indexed8 rows are padded to a 4-byte
+            // boundary (bytesPerLine >= width), so a flat width*height loop
+            // would drift into the row padding and corrupt lower rows.
+            for (int y = 0; y < img.height(); ++y) {
+                uchar* row = img.scanLine(y);
+                for (int x = 0; x < img.width(); ++x) {
+                    row[x] = static_cast<uchar>(remap[row[x]]);
+                }
             }
         }
 
@@ -304,13 +307,16 @@ std::optional<QuantResult> Quantizer::quantize(const QVector<AnimationFrame>& sr
             if (img.format() != QImage::Format_Indexed8)
                 continue;
 
-            uchar* bits = img.bits();
-            int size = img.width() * img.height();
-
-            for (int i = 0; i < size; ++i) {
-                QRgb originalColor = out.palette[bits[i]];
-                if (qAlpha(originalColor) == 0) {
-                    bits[i] = 255; // Force use of index 255 for transparent pixels
+            // Per scanline: rows are padded to a 4-byte boundary, so a flat
+            // width*height loop would read padding as pixels (and index past
+            // the palette), which showed up as corruption at the bottom.
+            for (int y = 0; y < img.height(); ++y) {
+                uchar* row = img.scanLine(y);
+                for (int x = 0; x < img.width(); ++x) {
+                    QRgb originalColor = out.palette[row[x]];
+                    if (qAlpha(originalColor) == 0) {
+                        row[x] = 255; // Force use of index 255 for transparent pixels
+                    }
                 }
             }
         }

@@ -1,117 +1,203 @@
 name: Release
 
-# Build AnimStudio and publish binaries to a GitHub Release when a version
-# tag (e.g. v1.2.3) is pushed.
+# Build AnimStudio for Windows and Linux and publish binaries to a GitHub
+# Release when a version tag (e.g. V1.2.3) is pushed, then open a PR to update
+# the Knossos tool repo so the new version goes live.
 on:
   push:
     tags:
       - 'V*'
       - 'v*'
-  # Allow a manual dry-run from the Actions tab (builds, uploads artifact,
-  # but only publishes a Release when triggered by a tag).
+  # Manual dry-run from the Actions tab: builds both OSes and uploads artifacts,
+  # but only publishes a Release (and opens the Knossos PR) on a real tag.
   workflow_dispatch:
 
 permissions:
   contents: write   # required to create the Release and upload assets
 
 jobs:
-  windows:
-    name: Windows (x64)
-    runs-on: windows-2025
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            qt_host: windows
+            qt_arch: win64_msvc2022_64
+          - os: ubuntu-latest
+            qt_host: linux
+            qt_arch: linux_gcc_64
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
+      # AnimStudio uses core/gui/widgets/concurrent (all base Qt) plus the
+      # qtimageformats plugins (tga/tiff/webp/...), which it ships. Install that
+      # module on both OSes so the bundled plugin set matches the Windows build.
       - name: Install Qt 6.8.3
         uses: jurplel/install-qt-action@v4
         with:
           version: '6.8.3'
-          host: windows
+          host: ${{ matrix.qt_host }}
           target: desktop
-          arch: win64_msvc2022_64
-          # AnimStudio uses: core gui widgets concurrent (all in base Qt).
-          # qtimageformats added for extra image codecs at runtime.
+          arch: ${{ matrix.qt_arch }}
           modules: qtimageformats
           cache: true
 
-      - name: Add MSBuild to PATH
-        uses: microsoft/setup-msbuild@v2
+      # ---- Windows -------------------------------------------------------
+      # Put MSVC (cl/link) on PATH for whatever VS the runner ships, so we're
+      # not pinned to a specific Visual Studio generator version. (Maintained
+      # Node 24 reimplementation of ilammy/msvc-dev-cmd, same inputs.)
+      - name: Set up MSVC (Windows)
+        if: runner.os == 'Windows'
+        uses: TheMrMilchmann/setup-msvc-dev@v4
+        with:
+          arch: x64
 
-      - name: Fetch Qt VS Tools MSBuild integration (QtMsBuild)
-        shell: pwsh
-        env:
-          VSADDIN_VERSION: '3.4.1'
-        run: |
-          # The .vcxproj was authored by Qt VS Tools and imports Qt.props /
-          # qt.targets from $(QtMsBuild). Those (fully generated) files ship
-          # inside the Qt VS Tools add-in .vsix, which is just a zip. Extract
-          # the QtMSBuild folder and point $(QtMsBuild) at it so the project's
-          # imports resolve without the VS extension being installed.
-          $ver = $env:VSADDIN_VERSION
-          $url = "https://download.qt.io/official_releases/vsaddin/$ver/qt-vsaddin-msvc2022-x64-$ver.vsix"
-          Invoke-WebRequest -Uri $url -OutFile qtvsaddin.zip
-          Expand-Archive -Path qtvsaddin.zip -DestinationPath qtvsaddin -Force
-          $qtmsbuild = Join-Path $PWD "qtvsaddin\QtMSBuild"
-          if (-not (Test-Path "$qtmsbuild\qt.targets")) {
-            throw "QtMSBuild not found at $qtmsbuild"
-          }
-          "QtMsBuild=$qtmsbuild" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
-
-      - name: Build (Release|x64)
+      - name: Configure & build (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # QT_ROOT_DIR is exported by install-qt-action and points at the Qt
-          # install (…/Qt/6.8.3/msvc2022_64). QtMsBuild accepts a full path in
-          # QtInstall, bypassing the machine-registered-version lookup that the
-          # local .vcxproj relies on.
-          msbuild AnimStudio.slnx `
-            /m `
-            /p:Configuration=Release `
-            /p:Platform=x64 `
-            /p:QtInstall="$env:QT_ROOT_DIR" `
-            /verbosity:minimal
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_PREFIX_PATH="$env:QT_ROOT_DIR"
+          cmake --build build --parallel
 
-      - name: Package with windeployqt
+      - name: Package with windeployqt (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # The Knossos entry expects the exe at "AnimStudio.exe" at the zip
+          # root, so stage a flat folder and archive its contents.
+          $name = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "dev" }
           $staging = "dist\AnimStudio"
           New-Item -ItemType Directory -Force -Path $staging | Out-Null
-          Copy-Item "x64\Release\AnimStudio.exe" $staging
+          Copy-Item "build\AnimStudio.exe" $staging
           & "$env:QT_ROOT_DIR\bin\windeployqt.exe" `
             --release --no-translations --compiler-runtime `
             "$staging\AnimStudio.exe"
           Copy-Item "README.md","LICENSE" $staging -ErrorAction SilentlyContinue
-
-      - name: Zip
-        shell: pwsh
-        run: |
-          $name = if ($env:GITHUB_REF_NAME) { $env:GITHUB_REF_NAME } else { "dev" }
           $zip = "AnimStudio-$name-win64.zip"
           Compress-Archive -Path "dist\AnimStudio\*" -DestinationPath $zip -Force
           "ASSET=$zip" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
-      - name: Upload build artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload build artifact (Windows)
+        if: runner.os == 'Windows'
+        uses: actions/upload-artifact@v6
         with:
           name: AnimStudio-win64
           path: ${{ env.ASSET }}
 
-      - name: Publish to Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v2
+      # ---- Linux ---------------------------------------------------------
+      - name: Install Linux build & Qt xcb deps
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          # ninja for the build; libgl + libxcb-* so the Qt 'xcb' platform
+          # plugin (and its deps) exist for linuxdeploy to bundle.
+          sudo apt-get install -y \
+            ninja-build \
+            libgl1-mesa-dev libxkbcommon-dev \
+            libxcb1-dev libxcb-cursor0 libxcb-icccm4 libxcb-image0 \
+            libxcb-keysyms1 libxcb-randr0 libxcb-render-util0 \
+            libxcb-shape0 libxcb-xinerama0 libxcb-util1
+
+      - name: Configure & build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT_DIR"
+          cmake --build build --parallel
+
+      - name: Package AppImage (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          set -euo pipefail
+          name="${GITHUB_REF_NAME:-dev}"
+          appdir="$PWD/AppDir"
+          mkdir -p "$appdir/usr/bin" \
+                   "$appdir/usr/share/applications" \
+                   "$appdir/usr/share/icons/hicolor/256x256/apps"
+          cp build/AnimStudio "$appdir/usr/bin/AnimStudio"
+          cp AnimStudio/Forms/Resources/icon.png \
+             "$appdir/usr/share/icons/hicolor/256x256/apps/AnimStudio.png"
+          {
+            echo "[Desktop Entry]"
+            echo "Type=Application"
+            echo "Name=AnimStudio"
+            echo "Comment=Animation creation and conversion for FreeSpace Open"
+            echo "Exec=AnimStudio"
+            echo "Icon=AnimStudio"
+            echo "Categories=Graphics;Utility;"
+            echo "Terminal=false"
+          } > "$appdir/usr/share/applications/AnimStudio.desktop"
+
+          curl -fL -o linuxdeploy \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          curl -fL -o linuxdeploy-plugin-qt \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy linuxdeploy-plugin-qt
+          # linuxdeploy finds its plugins next to itself / on PATH.
+          export PATH="$PWD:$PATH"
+
+          # Runners lack FUSE; run the AppImage tools by extracting instead.
+          export APPIMAGE_EXTRACT_AND_RUN=1
+          export QMAKE="$QT_ROOT_DIR/bin/qmake"
+          ./linuxdeploy --appdir "$appdir" --plugin qt --output appimage
+
+          # Rename whatever AppImage was produced to the versioned asset name.
+          built="$(ls -1 AnimStudio*.AppImage | head -n1)"
+          appimage="AnimStudio-${name}-x86_64.AppImage"
+          if [ "$built" != "$appimage" ]; then mv "$built" "$appimage"; fi
+
+          # Knossos Linux package: a zip of the self-contained bundle. linuxdeploy
+          # populated AppDir with the binary + bundled Qt and set rpath, so
+          # usr/bin/AnimStudio runs without FUSE. Knossos extracts this zip and
+          # launches executable_path (usr/bin/AnimStudio). -y preserves the
+          # library symlinks linuxdeploy creates.
+          knzip="AnimStudio-${name}-linux-x86_64.zip"
+          ( cd "$appdir" && zip -ryq "$GITHUB_WORKSPACE/$knzip" . )
+
+          echo "APPIMAGE=$appimage" >> "$GITHUB_ENV"
+          echo "KNZIP=$knzip" >> "$GITHUB_ENV"
+
+      - name: Upload build artifacts (Linux)
+        if: runner.os == 'Linux'
+        uses: actions/upload-artifact@v6
         with:
-          files: ${{ env.ASSET }}
+          name: AnimStudio-linux
+          path: |
+            ${{ env.APPIMAGE }}
+            ${{ env.KNZIP }}
+
+  # Publish both OS assets to the Release, but only on a real tag.
+  release:
+    name: Publish Release
+    needs: build
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Publish to Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: dist/**
           draft: false
           prerelease: false
           generate_release_notes: true
 
   # Open a pull request against the Knossos tool repo to point it at the new
-  # release. Runs only on a real tag, only after the Windows build/publish
-  # succeeded, and only if the KNOSSOS_PAT secret is configured (so forks and
-  # contributors without the token simply skip it instead of failing).
+  # release (Windows zip only). Runs only on a real tag, after the Release is
+  # published, and only if the KNOSSOS_PAT secret is configured.
   knossos-pr:
     name: Propose Knossos update
-    needs: windows
+    needs: release
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest
     steps:
@@ -129,7 +215,7 @@ jobs:
 
       - name: Checkout Knossos tool repo (upstream)
         if: steps.gate.outputs.enabled == 'true'
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: KnossosNET/Knet-Tool-Repo
           ref: main
@@ -141,21 +227,26 @@ jobs:
         working-directory: knossos
         env:
           TAG: ${{ github.ref_name }}
-          DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-win64.zip
+          WIN_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-win64.zip
+          LINUX_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-linux-x86_64.zip
         run: |
           set -euo pipefail
+          # Tags look like "V1.3.0"; Knossos wants "1.3.0".
+          export VER="${TAG#[Vv]}"
           export DATE="$(date -u +%F)"
-          # Surgical, minimal-diff edit: only the AnimStudio entry's version,
-          # last_update and download_url change. We splice inside that one JSON
-          # object's braces rather than re-serialize the whole file, so the rest
-          # of knet_tools.json (which has inconsistent indentation) is untouched.
+          # Minimal-diff edit of ONLY the AnimStudio entry: update version /
+          # last_update, point the windows + linux packages at the new assets,
+          # force cpu_arch x64 (we ship 64-bit everywhere; the entry still said
+          # x86), and add the linux package the first time. We splice inside that
+          # one object rather than re-serialize the file, so the rest of
+          # knet_tools.json is untouched.
           python3 - "knet_tools.json" <<'PY'
           import io, os, re, json, sys
           path = sys.argv[1]
-          tag  = os.environ["TAG"]
-          ver  = tag[1:] if tag.startswith("V") else tag
+          ver  = os.environ["VER"]
           date = os.environ["DATE"]
-          url  = os.environ["DOWNLOAD_URL"]
+          win  = os.environ["WIN_URL"]
+          lin  = os.environ["LINUX_URL"]
 
           s = io.open(path, encoding="utf-8").read()
           m = re.search(r'"name"\s*:\s*"AnimStudio"', s)
@@ -176,16 +267,44 @@ jobs:
               sys.exit("could not find end of AnimStudio object")
 
           block = s[start:end]
-          block = re.sub(r'("version"\s*:\s*)"[^"]*"',      r'\g<1>"%s"' % ver,  block, count=1)
-          block = re.sub(r'("last_update"\s*:\s*)"[^"]*"',  r'\g<1>"%s"' % date, block, count=1)
-          block = re.sub(r'("download_url"\s*:\s*)"[^"]*"', r'\g<1>"%s"' % url,  block, count=1)
+          # Top-level fields.
+          block = re.sub(r'("version"\s*:\s*)"[^"]*"',     r'\g<1>"%s"' % ver,  block, count=1)
+          block = re.sub(r'("last_update"\s*:\s*)"[^"]*"', r'\g<1>"%s"' % date, block, count=1)
+          # We ship 64-bit on every platform.
+          block = re.sub(r'("cpu_arch"\s*:\s*)"[^"]*"',    r'\g<1>"x64"',       block)
+          # Windows package download_url (identified by its -win64.zip asset).
+          block = re.sub(r'("download_url"\s*:\s*)"[^"]*win64\.zip"',
+                         r'\g<1>"%s"' % win, block, count=1)
+          # Linux package: update in place if present, else append to the array.
+          if re.search(r'"os"\s*:\s*"linux"', block):
+              block = re.sub(r'("download_url"\s*:\s*)"[^"]*linux-x86_64\.zip"',
+                             r'\g<1>"%s"' % lin, block, count=1)
+          else:
+              linux_pkg = (
+                  '      {\n'
+                  '        "download_url": "%s",\n'
+                  '        "os": "linux",\n'
+                  '        "cpu_arch": "x64",\n'
+                  '        "executable_path": "usr/bin/AnimStudio"\n'
+                  '      }' % lin
+              )
+              block, n = re.subn(r'\n([ \t]*)\}\n([ \t]*)\]',
+                                 '\n\\1},\n' + linux_pkg + '\n\\2]', block, count=1)
+              if n != 1:
+                  sys.exit("could not locate packages array to insert linux package")
+
           s2 = s[:start] + block + s[end:]
 
           data = json.loads(s2)  # fail loudly if we produced invalid JSON
-          a = [e for e in data if e.get("name") == "AnimStudio"][0]
-          assert a["version"] == ver, a["version"]
-          assert a["last_update"] == date, a["last_update"]
-          assert a["packages"][0]["download_url"] == url, a["packages"][0]["download_url"]
+          e = [x for x in data if x.get("name") == "AnimStudio"][0]
+          assert e["version"] == ver, e["version"]
+          assert e["last_update"] == date, e["last_update"]
+          pkgs = dict((p.get("os"), p) for p in e["packages"])
+          assert pkgs["windows"]["download_url"] == win, pkgs["windows"]["download_url"]
+          assert pkgs["windows"]["cpu_arch"] == "x64", pkgs["windows"]["cpu_arch"]
+          assert pkgs["linux"]["download_url"] == lin, pkgs["linux"]["download_url"]
+          assert pkgs["linux"]["cpu_arch"] == "x64", pkgs["linux"]["cpu_arch"]
+          assert pkgs["linux"]["executable_path"] == "usr/bin/AnimStudio"
 
           io.open(path, "w", encoding="utf-8", newline="").write(s2)
           PY
@@ -193,7 +312,7 @@ jobs:
 
       - name: Create pull request
         if: steps.gate.outputs.enabled == 'true'
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           token: ${{ secrets.KNOSSOS_PAT }}
           path: knossos

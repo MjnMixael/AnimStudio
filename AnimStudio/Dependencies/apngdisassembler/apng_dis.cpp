@@ -30,14 +30,19 @@
 
  // This version has been modified for use in AnimStudio in order to load APNGs only into our custom AnimationData structure.
 
+#ifdef _WIN32
 #include <windows.h>
 #include <commctrl.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <vector>
 #include "png.h"     /* original (unpatched) libpng is ok */
 #include "zlib.h"
+#ifndef _WIN32
+#include <QString>   // UTF-8 path conversion for fopen() on non-Windows
+#endif
 
 #define notabc(c) ((c) < 65 || (c) > 122 || ((c) > 90 && (c) < 97))
 
@@ -73,7 +78,9 @@ struct Image
   void free() { delete[] rows; delete[] p; }
 };
 
-extern HWND  hMainDlg;
+#ifdef _WIN32
+extern HWND  hMainDlg;   // vestigial from the original GUI tool; unused here
+#endif
 
 const unsigned long cMaxPNGSize = 16384UL;
 
@@ -230,7 +237,12 @@ int load_apng(wchar_t * szIn, std::vector<Image>& img)
   Image frameNext;
   int res = -1;
 
-  if ((f = _wfopen(szIn, L"rb")) != 0)
+#ifdef _WIN32
+  f = _wfopen(szIn, L"rb");   // wide path: Unicode filename support on Windows
+#else
+  f = fopen(QString::fromWCharArray(szIn).toUtf8().constData(), "rb");
+#endif
+  if (f != 0)
   {
     if (fread(sig, 1, 8, f) == 8 && png_sig_cmp(sig, 0, 8) == 0)
     {

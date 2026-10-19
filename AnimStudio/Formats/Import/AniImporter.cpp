@@ -99,7 +99,7 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
     auto lastFrame = std::make_unique<quint8[]>(bufSize);
     auto curFrame = std::make_unique<quint8[]>(bufSize);
 
-    // initialize lastFrame to the “background” RGB (rarely used)
+    // initialize lastFrame to the ï¿½backgroundï¿½ RGB (rarely used)
     quint32 bg = rgbR + (rgbG << 8) + (rgbB << 16);
     memset(lastFrame.get(), bg, bufSize);
 
@@ -197,13 +197,17 @@ std::optional<AnimationData> AniImporter::importFromFile(const QString& aniPath)
             QImage& img = frame.image;
 
             if (img.format() == QImage::Format_Indexed8) {
-                uchar* bits = img.bits();
-                const int numPixels = img.width() * img.height();
-                for (int i = 0; i < numPixels; ++i) {
-                    if (bits[i] == transparentIndex)
-                        bits[i] = 255;
-                    else if (bits[i] == 255)
-                        bits[i] = transparentIndex;
+                // Per scanline: Indexed8 rows are padded to a 4-byte boundary,
+                // so a flat width*height loop drifts into the padding on widths
+                // that aren't a multiple of 4 and corrupts lower rows.
+                for (int y = 0; y < img.height(); ++y) {
+                    uchar* row = img.scanLine(y);
+                    for (int x = 0; x < img.width(); ++x) {
+                        if (row[x] == transparentIndex)
+                            row[x] = 255;
+                        else if (row[x] == 255)
+                            row[x] = transparentIndex;
+                    }
                 }
             }
         }
