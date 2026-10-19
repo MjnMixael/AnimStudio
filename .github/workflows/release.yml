@@ -8,6 +8,7 @@ on:
     tags:
       - 'V*'
       - 'v*'
+      - 'Version_*'
   # Manual dry-run from the Actions tab: builds both OSes and uploads artifacts,
   # but only publishes a Release (and opens the Knossos PR) on a real tag.
   workflow_dispatch:
@@ -227,84 +228,114 @@ jobs:
         working-directory: knossos
         env:
           TAG: ${{ github.ref_name }}
-          WIN_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-win64.zip
-          LINUX_URL: https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/AnimStudio-${{ github.ref_name }}-linux-x86_64.zip
+          APP_NAME: "AnimStudio"
+          APP_DESC: "A powerful animation creation and conversion tool for FreeSpace Open formats."
+          WIN_EXE_PATH: "AnimStudio.exe"
+          LINUX_EXE_PATH: "usr/bin/AnimStudio"
         run: |
           set -euo pipefail
-          # Tags look like "V1.3.0"; Knossos wants "1.3.0".
-          export VER="${TAG#[Vv]}"
+          # Strip any leading tag prefix (V, v, Version_) to get the bare version.
+          export VER="$(echo "$TAG" | sed -E 's/^[^0-9]*//')"
           export DATE="$(date -u +%F)"
-          # Minimal-diff edit of ONLY the AnimStudio entry: update version /
-          # last_update, point the windows + linux packages at the new assets,
-          # force cpu_arch x64 (we ship 64-bit everywhere; the entry still said
-          # x86), and add the linux package the first time. We splice inside that
-          # one object rather than re-serialize the file, so the rest of
-          # knet_tools.json is untouched.
+          base="https://github.com/$GITHUB_REPOSITORY/releases/download/$TAG"
+          export WIN_URL="$base/${APP_NAME}-${TAG}-win64.zip"
+          export LINUX_URL="$base/${APP_NAME}-${TAG}-linux-x86_64.zip"
+          # Create the tool entry if it doesn't exist yet, otherwise patch it in
+          # place (version / last_update, windows + linux package URLs, cpu_arch
+          # x64). Identical across every app's workflow, so it copies as-is.
           python3 - "knet_tools.json" <<'PY'
           import io, os, re, json, sys
           path = sys.argv[1]
-          ver  = os.environ["VER"]
-          date = os.environ["DATE"]
-          win  = os.environ["WIN_URL"]
-          lin  = os.environ["LINUX_URL"]
+          app     = os.environ["APP_NAME"]
+          ver     = os.environ["VER"]
+          date    = os.environ["DATE"]
+          win     = os.environ["WIN_URL"]
+          lin     = os.environ["LINUX_URL"]
+          desc    = os.environ["APP_DESC"]
+          win_exe = os.environ["WIN_EXE_PATH"]
+          lin_exe = os.environ["LINUX_EXE_PATH"]
 
           s = io.open(path, encoding="utf-8").read()
-          m = re.search(r'"name"\s*:\s*"AnimStudio"', s)
-          if not m:
-              sys.exit("AnimStudio entry not found")
-          start = s.rfind("{", 0, m.start())
-          depth, i, end = 0, start, None
-          while i < len(s):
-              if s[i] == "{":
-                  depth += 1
-              elif s[i] == "}":
-                  depth -= 1
-                  if depth == 0:
-                      end = i + 1
-                      break
-              i += 1
-          if end is None:
-              sys.exit("could not find end of AnimStudio object")
+          m = re.search(r'"name"\s*:\s*"%s"' % re.escape(app), s)
 
-          block = s[start:end]
-          # Top-level fields.
-          block = re.sub(r'("version"\s*:\s*)"[^"]*"',     r'\g<1>"%s"' % ver,  block, count=1)
-          block = re.sub(r'("last_update"\s*:\s*)"[^"]*"', r'\g<1>"%s"' % date, block, count=1)
-          # We ship 64-bit on every platform.
-          block = re.sub(r'("cpu_arch"\s*:\s*)"[^"]*"',    r'\g<1>"x64"',       block)
-          # Windows package download_url (identified by its -win64.zip asset).
-          block = re.sub(r'("download_url"\s*:\s*)"[^"]*win64\.zip"',
-                         r'\g<1>"%s"' % win, block, count=1)
-          # Linux package: update in place if present, else append to the array.
-          if re.search(r'"os"\s*:\s*"linux"', block):
-              block = re.sub(r'("download_url"\s*:\s*)"[^"]*linux-x86_64\.zip"',
-                             r'\g<1>"%s"' % lin, block, count=1)
+          if m:
+              # Patch the existing entry in place (minimal, surgical).
+              start = s.rfind("{", 0, m.start())
+              depth, i, end = 0, start, None
+              while i < len(s):
+                  if s[i] == "{":
+                      depth += 1
+                  elif s[i] == "}":
+                      depth -= 1
+                      if depth == 0:
+                          end = i + 1
+                          break
+                  i += 1
+              if end is None:
+                  sys.exit("could not find end of %s object" % app)
+              block = s[start:end]
+              block = re.sub(r'("version"\s*:\s*)"[^"]*"',     r'\g<1>"%s"' % ver,  block, count=1)
+              block = re.sub(r'("last_update"\s*:\s*)"[^"]*"', r'\g<1>"%s"' % date, block, count=1)
+              block = re.sub(r'("cpu_arch"\s*:\s*)"[^"]*"',    r'\g<1>"x64"',       block)
+              block = re.sub(r'("download_url"\s*:\s*)"[^"]*win64\.zip"',
+                             r'\g<1>"%s"' % win, block, count=1)
+              if re.search(r'"os"\s*:\s*"linux"', block):
+                  block = re.sub(r'("download_url"\s*:\s*)"[^"]*linux-x86_64\.zip"',
+                                 r'\g<1>"%s"' % lin, block, count=1)
+              else:
+                  linux_pkg = (
+                      '      {\n'
+                      '        "download_url": "%s",\n'
+                      '        "os": "linux",\n'
+                      '        "cpu_arch": "x64",\n'
+                      '        "executable_path": "%s"\n'
+                      '      }' % (lin, lin_exe)
+                  )
+                  block, n = re.subn(r'\n([ \t]*)\}\n([ \t]*)\]',
+                                     '\n\\1},\n' + linux_pkg + '\n\\2]', block, count=1)
+                  if n != 1:
+                      sys.exit("could not locate packages array to insert linux package")
+              s2 = s[:start] + block + s[end:]
           else:
-              linux_pkg = (
+              # Create a new entry and append it to the tool array.
+              entry = (
+                  '  {\n'
+                  '    "name": %s,\n'
+                  '    "version": %s,\n'
+                  '    "description": %s,\n'
+                  '    "last_update": %s,\n'
+                  '    "cmdline": "",\n'
+                  '    "packages": [\n'
                   '      {\n'
-                  '        "download_url": "%s",\n'
+                  '        "download_url": %s,\n'
+                  '        "os": "windows",\n'
+                  '        "cpu_arch": "x64",\n'
+                  '        "executable_path": %s\n'
+                  '      },\n'
+                  '      {\n'
+                  '        "download_url": %s,\n'
                   '        "os": "linux",\n'
                   '        "cpu_arch": "x64",\n'
-                  '        "executable_path": "usr/bin/AnimStudio"\n'
-                  '      }' % lin
+                  '        "executable_path": %s\n'
+                  '      }\n'
+                  '    ]\n'
+                  '  }' % (json.dumps(app), json.dumps(ver), json.dumps(desc), json.dumps(date),
+                          json.dumps(win), json.dumps(win_exe), json.dumps(lin), json.dumps(lin_exe))
               )
-              block, n = re.subn(r'\n([ \t]*)\}\n([ \t]*)\]',
-                                 '\n\\1},\n' + linux_pkg + '\n\\2]', block, count=1)
+              s2, n = re.subn(r'\n\]\s*$', ',\n' + entry + '\n]\n', s, count=1)
               if n != 1:
-                  sys.exit("could not locate packages array to insert linux package")
-
-          s2 = s[:start] + block + s[end:]
+                  sys.exit("could not find end of tool array to append %s" % app)
 
           data = json.loads(s2)  # fail loudly if we produced invalid JSON
-          e = [x for x in data if x.get("name") == "AnimStudio"][0]
+          e = [x for x in data if x.get("name") == app][0]
           assert e["version"] == ver, e["version"]
           assert e["last_update"] == date, e["last_update"]
           pkgs = dict((p.get("os"), p) for p in e["packages"])
-          assert pkgs["windows"]["download_url"] == win, pkgs["windows"]["download_url"]
-          assert pkgs["windows"]["cpu_arch"] == "x64", pkgs["windows"]["cpu_arch"]
-          assert pkgs["linux"]["download_url"] == lin, pkgs["linux"]["download_url"]
-          assert pkgs["linux"]["cpu_arch"] == "x64", pkgs["linux"]["cpu_arch"]
-          assert pkgs["linux"]["executable_path"] == "usr/bin/AnimStudio"
+          assert pkgs["windows"]["download_url"] == win
+          assert pkgs["windows"]["cpu_arch"] == "x64"
+          assert pkgs["linux"]["download_url"] == lin
+          assert pkgs["linux"]["cpu_arch"] == "x64"
+          assert pkgs["linux"]["executable_path"] == lin_exe
 
           io.open(path, "w", encoding="utf-8", newline="").write(s2)
           PY
