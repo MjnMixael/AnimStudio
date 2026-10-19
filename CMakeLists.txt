@@ -202,6 +202,22 @@ set(ANIMSTUDIO_VENDORED
 # The vendored C/C++ is plain - keep Qt autogen (moc/uic/rcc) off it.
 set_source_files_properties(${ANIMSTUDIO_VENDORED} PROPERTIES SKIP_AUTOGEN ON)
 
+# The Compressonator SIMD kernels use SSE4.1/AVX/AVX-512 intrinsics. MSVC makes
+# these available unconditionally, but GCC/Clang need the matching per-file arch
+# flag or the always_inline intrinsics fail to compile. Runtime CPU detection
+# still decides which path actually executes.
+if(NOT MSVC)
+    set_source_files_properties(
+        AnimStudio/Dependencies/compressonator/cmp_core/source/core_simd_sse.cpp
+        PROPERTIES COMPILE_OPTIONS "-msse4.1")
+    set_source_files_properties(
+        AnimStudio/Dependencies/compressonator/cmp_core/source/core_simd_avx.cpp
+        PROPERTIES COMPILE_OPTIONS "-mavx")
+    set_source_files_properties(
+        AnimStudio/Dependencies/compressonator/cmp_core/source/core_simd_avx512.cpp
+        PROPERTIES COMPILE_OPTIONS "-mavx512f")
+endif()
+
 qt_add_executable(AnimStudio WIN32
     "AnimStudio/Animation/AnimationController.cpp"
     "AnimStudio/Animation/AnimationData.cpp"
