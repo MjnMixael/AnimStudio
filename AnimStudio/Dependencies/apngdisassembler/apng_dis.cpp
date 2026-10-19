@@ -40,6 +40,9 @@
 #include <vector>
 #include "png.h"     /* original (unpatched) libpng is ok */
 #include "zlib.h"
+#ifndef _WIN32
+#include <QString>   // UTF-8 path conversion for fopen() on non-Windows
+#endif
 
 #define notabc(c) ((c) < 65 || (c) > 122 || ((c) > 90 && (c) < 97))
 
@@ -234,7 +237,12 @@ int load_apng(wchar_t * szIn, std::vector<Image>& img)
   Image frameNext;
   int res = -1;
 
-  if ((f = _wfopen(szIn, L"rb")) != 0)
+#ifdef _WIN32
+  f = _wfopen(szIn, L"rb");   // wide path: Unicode filename support on Windows
+#else
+  f = fopen(QString::fromWCharArray(szIn).toUtf8().constData(), "rb");
+#endif
+  if (f != 0)
   {
     if (fread(sig, 1, 8, f) == 8 && png_sig_cmp(sig, 0, 8) == 0)
     {
