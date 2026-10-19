@@ -2,9 +2,9 @@
 
 #include <QtWidgets/QMainWindow>
 #include <qmainwindow.h>
-#include <qvector>
-#include <qimage>
-#include <qtimer>
+#include <QVector>
+#include <QImage>
+#include <QTimer>
 #include <QtConcurrent/QtConcurrent>
 #include <QDockWidget>
 #include <QLabel>
